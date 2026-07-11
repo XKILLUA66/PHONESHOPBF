@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phone Shop BF — Achetez et vendez des téléphones au Burkina Faso</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0B1F3A; --navy-light:#132a4d; --black:#0A0A0A; --white:#FFFFFF;
+    --orange:#FF6B1A; --orange-dark:#E4590E; --gold:#F2A93B; --green:#1FAA59;
+    --grey:#7C8AA0; --card:#0F2444;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{ background:var(--navy); color:var(--white); font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased; }
+  h1,h2,h3,.display{ font-family:'Sora',sans-serif; font-weight:800; letter-spacing:-0.02em; }
+  .mono{ font-family:'IBM Plex Mono',monospace; }
+  a{ text-decoration:none; color:inherit; }
+  img,video{max-width:100%; display:block;}
+
+  header{
+    display:flex; align-items:center; justify-content:space-between; padding:16px 20px;
+    background:var(--black); position:sticky; top:0; z-index:50;
+    border-bottom:1px solid rgba(255,255,255,0.06);
+  }
+  .logo{ display:flex; align-items:center; gap:8px; font-size:18px; font-weight:800; }
+  .logo .dot{ width:8px; height:8px; border-radius:50%; background:var(--orange); }
+  nav.icons{ display:flex; gap:12px; align-items:center; }
+  .icon-btn{
+    width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+    background:rgba(255,255,255,0.06); font-size:16px;
+  }
+  .compte-avatar{
+    width:38px; height:38px; border-radius:50%;
+    background:linear-gradient(135deg, var(--orange), var(--gold));
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Sora',sans-serif; font-weight:700; font-size:14px; color:var(--black);
+  }
+
+  .compte-strip{
+    display:none; align-items:center; gap:10px; padding:10px 20px;
+    background:var(--navy-light); font-size:12.5px; color:#C9D2E0;
+    border-bottom:1px solid rgba(255,255,255,0.06);
+  }
+  .compte-strip b{ color:var(--white); }
+  .compte-strip .pill{
+    font-family:'IBM Plex Mono',monospace; font-size:9.5px; padding:2px 7px; border-radius:6px;
+    background:rgba(255,107,26,0.18); color:var(--gold); margin-left:auto;
+  }
+
+  .hero{
+    padding:28px 20px 24px;
+    background:
+      radial-gradient(120% 100% at 100% 0%, rgba(255,107,26,0.18), transparent 55%),
+      linear-gradient(180deg, var(--navy) 0%, var(--navy-light) 100%);
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--gold); display:flex; align-items:center; gap:8px; margin-bottom:10px;
+  }
+  .eyebrow::before{ content:''; width:16px; height:1px; background:var(--gold); }
+  .hero h1{ font-size:30px; line-height:1.08; margin-bottom:10px; }
+  .hero h1 span{ color:var(--orange); }
+  .hero p{ color:var(--grey); font-size:14.5px; line-height:1.5; max-width:480px; margin-bottom:20px;}
+
+  .search-box{
+    background:var(--white); border-radius:14px; padding:6px; display:flex; gap:6px;
+    box-shadow:0 12px 30px rgba(0,0,0,0.35);
+  }
+  .search-box input{
+    flex:1; border:none; outline:none; padding:12px 14px; font-family:'Inter',sans-serif;
+    font-size:14.5px; color:var(--black); background:transparent;
+  }
+  .search-box button{
+    background:var(--orange); color:var(--white); border:none; padding:0 20px; border-radius:9px;
+    font-weight:600; font-size:14px; cursor:pointer;
+  }
+  .search-hint{ font-size:11.5px; color:var(--grey); margin-top:10px; }
+  .clear-search{ color:var(--orange); font-weight:600; cursor:pointer; }
+
+  .filter-chips{
+    display:flex; gap:8px; overflow-x:auto; margin-top:14px; padding-bottom:4px; scrollbar-width:none;
+  }
+  .filter-chips::-webkit-scrollbar{ display:none; }
+  .chip{
+    flex:none; padding:8px 14px; border-radius:999px; background:rgba(255,255,255,0.07);
+    border:1px solid rgba(255,255,255,0.1); font-size:12.5px; color:var(--white); white-space:nowrap; cursor:pointer;
+  }
+
+  section{ padding:30px 20px; }
+  .section-head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:16px; }
+  .section-head h2{ font-size:19px; }
+  .section-tag{
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--grey);
+    text-transform:uppercase; letter-spacing:0.1em; display:block; margin-bottom:4px;
+  }
+
+  .row-scroll{
+    display:flex; gap:14px; overflow-x:auto; margin:0 -20px; padding:0 20px 6px; scrollbar-width:none;
+  }
+  .row-scroll::-webkit-scrollbar{ display:none; }
+  .grid-results{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+
+  .phone-card{
+    flex:none; width:168px; background:var(--card); border-radius:14px; position:relative;
+    border:1px solid rgba(255,255,255,0.06); overflow:hidden;
+  }
+  .grid-results .phone-card{ width:auto; }
+  .phone-card .shot{
+    height:120px; background:linear-gradient(160deg,#1a3560,#0c1f3f);
+    display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;
+  }
+  .phone-card .shot img{ width:100%; height:100%; object-fit:cover; }
+  .phone-card .shot .silhouette{ width:46px; height:86px; border-radius:10px; background:rgba(255,255,255,0.12); border:1.5px solid rgba(255,255,255,0.25); }
+  .badge-etat{
+    position:absolute; top:8px; left:8px; font-size:9.5px; font-family:'IBM Plex Mono',monospace; font-weight:600;
+    padding:3px 7px; border-radius:6px; letter-spacing:0.03em;
+  }
+  .badge-neuf{ background:var(--green); color:var(--white); }
+  .badge-occasion{ background:var(--gold); color:var(--black); }
+  .video-tag{
+    position:absolute; bottom:8px; left:8px; font-size:9.5px; background:rgba(0,0,0,0.6);
+    color:var(--white); padding:3px 7px; border-radius:6px; display:flex; align-items:center; gap:3px;
+  }
+  .verified-tick{
+    position:absolute; top:8px; right:8px; width:18px; height:18px; border-radius:50%;
+    background:var(--navy); border:1.5px solid var(--orange); display:flex; align-items:center; justify-content:center;
+    font-size:10px; color:var(--orange);
+  }
+  .perforation{ position:relative; height:1px; border-top:1.5px dashed rgba(255,255,255,0.18); margin:0 10px; }
+  .perforation::before, .perforation::after{ content:''; position:absolute; top:-6px; width:12px; height:12px; border-radius:50%; background:var(--navy); }
+  .perforation::before{ left:-16px; }
+  .perforation::after{ right:-16px; }
+
+  .phone-card .info{ padding:12px 10px 14px; }
+  .phone-card .brand{ font-size:10px; color:var(--grey); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:2px;}
+  .phone-card .name{ font-size:13.5px; font-weight:600; line-height:1.25; margin-bottom:8px; min-height:34px;}
+  .phone-card .price{ font-family:'IBM Plex Mono',monospace; font-weight:600; font-size:15px; color:var(--orange); }
+  .phone-card .meta{ display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:10.5px; color:var(--grey); }
+  .phone-card .boutique-name{ font-size:10.5px; color:#C9D2E0; margin-top:4px; }
+
+  .btn-discuter{
+    display:flex; align-items:center; justify-content:center; gap:6px; width:100%;
+    background:var(--green); color:var(--white); border:none; padding:9px 0; border-radius:9px;
+    font-weight:700; font-size:12px; margin-top:10px; cursor:pointer;
+  }
+
+  .shop-card{
+    flex:none; width:132px; text-align:center; background:var(--card); border-radius:14px; padding:16px 10px;
+    border:1px solid rgba(255,255,255,0.06);
+  }
+  .shop-avatar{
+    width:52px; height:52px; border-radius:50%; margin:0 auto 10px;
+    background:linear-gradient(135deg, var(--orange), var(--gold)); display:flex; align-items:center; justify-content:center;
+    font-family:'Sora',sans-serif; font-weight:700; font-size:18px; color:var(--black);
+  }
+  .shop-card .sname{ font-size:12.5px; font-weight:600; margin-bottom:3px; }
+  .shop-card .sville{ font-size:10.5px; color:var(--grey); }
+  .shop-card .stick{ margin-top:8px; display:inline-flex; align-items:center; gap:4px; font-size:9.5px; color:var(--green); font-family:'IBM Plex Mono',monospace; }
+
+  .brand-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  .brand-tile{ background:var(--card); border-radius:12px; padding:14px 8px; text-align:center; font-size:12px; font-weight:600; border:1px solid rgba(255,255,255,0.06); }
+
+  .review-card{ flex:none; width:230px; background:var(--card); border-radius:14px; padding:16px; border:1px solid rgba(255,255,255,0.06); }
+  .stars{ color:var(--gold); font-size:13px; margin-bottom:8px; letter-spacing:2px; }
+  .review-card p{ font-size:12.5px; color:#C9D2E0; line-height:1.5; margin-bottom:12px; }
+  .reviewer{ display:flex; align-items:center; gap:8px; }
+  .reviewer .initial{ width:26px; height:26px; border-radius:50%; background:var(--navy-light); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; }
+  .reviewer .rname{ font-size:12px; font-weight:600; }
+  .reviewer .rcity{ font-size:10px; color:var(--grey); }
+
+  .empty-state{
+    text-align:center; padding:36px 16px; background:var(--card); border-radius:14px;
+    border:1px dashed rgba(255,255,255,0.12); color:var(--grey); font-size:13px; line-height:1.6;
+  }
+  .empty-state .ico{ font-size:26px; display:block; margin-bottom:10px; }
+  .empty-state a{ color:var(--orange); font-weight:600; }
+
+  /* ---------- Espace vendeur (sur la page d'accueil) ---------- */
+  .espace-vendeur{
+    margin:0 20px 26px; background:var(--card); border:1px solid rgba(255,107,26,0.25);
+    border-radius:16px; padding:18px;
+  }
+  .espace-vendeur .top{ display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+  .espace-vendeur .avatar{
+    width:44px; height:44px; border-radius:50%; flex:none;
+    background:linear-gradient(135deg, var(--orange), var(--gold));
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Sora',sans-serif; font-weight:700; font-size:16px; color:var(--black);
+  }
+  .espace-vendeur .nom{ font-size:14.5px; font-weight:700; }
+  .espace-vendeur .meta{ font-size:11.5px; color:var(--grey); margin-top:2px; }
+  .espace-vendeur .stats{ display:flex; gap:14px; margin-bottom:14px; }
+  .espace-vendeur .stat .n{ font-family:'IBM Plex Mono',monospace; font-size:17px; font-weight:600; }
+  .espace-vendeur .stat .l{ font-size:10.5px; color:var(--grey); }
+  .btn-publier{
+    width:100%; background:var(--orange); color:var(--white); border:none; padding:13px 0;
+    border-radius:11px; font-weight:700; font-size:13.5px; cursor:pointer;
+  }
+
+  /* ---------- Modal publication d'annonce ---------- */
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:200;
+    align-items:flex-end; justify-content:center;
+  }
+  .modal-overlay.show{ display:flex; }
+  .modal-sheet{
+    background:var(--navy); width:100%; max-width:480px; max-height:92vh; overflow-y:auto;
+    border-radius:20px 20px 0 0; padding:20px 18px 30px; position:relative;
+  }
+  .modal-close{
+    position:absolute; top:14px; right:14px; width:32px; height:32px; border-radius:50%;
+    background:rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center;
+    font-size:15px; cursor:pointer; z-index:2;
+  }
+  .modal-sheet h2{ font-size:19px; margin-bottom:4px; }
+  .modal-sheet .sub{ color:var(--grey); font-size:12.5px; margin-bottom:20px; }
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:12px; color:var(--grey); margin-bottom:6px; font-weight:500; }
+  .field .input-wrap{
+    display:flex; align-items:center; background:var(--navy-light); border:1px solid rgba(255,255,255,0.1);
+    border-radius:11px; padding:0 12px;
+  }
+  .field .input-wrap:focus-within{ border-color:var(--orange); }
+  .field .input-wrap .ico{ font-size:14px; color:var(--grey); margin-right:8px; }
+  .field input, .field select, .field textarea{
+    flex:1; background:transparent; border:none; outline:none; padding:12px 0;
+    color:var(--white); font-size:14px; font-family:'Inter',sans-serif;
+  }
+  .field textarea{ resize:vertical; min-height:70px; padding:11px 0; }
+  .field select option{ background:var(--navy); color:var(--white); }
+  .two-col{ display:flex; gap:10px; }
+  .two-col .field{ flex:1; }
+  .hint{ font-size:10.5px; color:var(--grey); margin-top:5px; }
+  .upload-box{
+    border:1.5px dashed rgba(255,255,255,0.18); border-radius:12px; padding:16px;
+    text-align:center; background:var(--navy-light); cursor:pointer; margin-bottom:8px;
+  }
+  .upload-box .ico{ font-size:20px; display:block; margin-bottom:4px; }
+  .upload-box .txt{ font-size:12px; color:var(--grey); }
+  .upload-box input{ display:none; }
+  .thumbs{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+  .thumb{ position:relative; width:64px; height:64px; border-radius:10px; overflow:hidden; background:var(--navy-light); border:1px solid rgba(255,255,255,0.08); }
+  .thumb img, .thumb video{ width:100%; height:100%; object-fit:cover; }
+  .thumb .remove{
+    position:absolute; top:2px; right:2px; width:16px; height:16px; border-radius:50%;
+    background:rgba(0,0,0,0.65); color:var(--white); font-size:10px; display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .thumb.video-thumb::after{ content:'▶'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:16px; background:rgba(0,0,0,0.25); }
+  .error-msg{ font-size:11px; color:#E5484D; margin-top:5px; display:none; }
+  .badge-info{
+    display:flex; gap:8px; align-items:flex-start; background:var(--navy-light);
+    border:1px solid rgba(255,107,26,0.25); border-radius:11px; padding:11px 13px;
+    margin:14px 0; font-size:11px; color:#B9C4D6; line-height:1.5;
+  }
+  .badge-info .ico{ color:var(--orange); font-size:14px; }
+
+  .toast{
+    position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(20px);
+    background:var(--green); color:var(--white); padding:12px 18px; border-radius:10px;
+    font-size:13px; font-weight:600; opacity:0; pointer-events:none; transition:all .25s ease;
+    box-shadow:0 10px 30px rgba(0,0,0,0.3); white-space:nowrap; z-index:300;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  .bottomnav{
+    position:sticky; bottom:0; z-index:50; display:flex; justify-content:space-around; align-items:center;
+    background:var(--black); border-top:1px solid rgba(255,255,255,0.08); padding:10px 0 14px;
+  }
+  .bottomnav .item{ display:flex; flex-direction:column; align-items:center; gap:3px; font-size:10px; color:var(--grey); }
+  .bottomnav .item.active{ color:var(--orange); }
+  .bottomnav .item .ico{ font-size:18px; }
+
+  @media (min-width:720px){
+    .hero h1{ font-size:42px; }
+    .brand-grid{ grid-template-columns:repeat(8,1fr); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo"><span class="dot"></span>PHONE SHOP<span style="color:var(--orange)">BF</span></div>
+  <nav class="icons">
+    <a class="icon-btn" href="javascript:void(0)" title="Favoris">♡</a>
+    <a class="icon-btn" href="javascript:void(0)" title="Messages">✉</a>
+    <a id="compteBtn" href="connexion.html"><span class="icon-btn" id="compteIcon">☰</span></a>
+  </nav>
+</header>
+
+<a href="connexion.html" style="text-decoration:none;">
+  <div class="compte-strip" id="compteStrip">
+    <span class="compte-avatar" id="compteAvatarStrip" style="width:26px;height:26px;font-size:11px;"></span>
+    <span>Bonjour, <b id="comptePrenom"></b></span>
+    <span class="pill" id="comptePill"></span>
+  </div>
+</a>
+
+<div class="hero">
+  <div class="eyebrow">Ouagadougou · Bobo-Dioulasso · tout le Burkina</div>
+  <h1>Le téléphone qu'il te faut, <span>vendu par un voisin</span> de confiance.</h1>
+  <p>Achète et vends des téléphones neufs ou d'occasion. Paiement par Orange Money, Moov Money ou Wave. Vendeurs vérifiés.</p>
+
+  <form class="search-box" id="formRecherche" onsubmit="return false;">
+    <input type="text" id="inputRecherche" placeholder="Rechercher un article ou une boutique...">
+    <button type="submit">Chercher</button>
+  </form>
+  <div class="search-hint" id="searchHint"></div>
+
+  <div class="filter-chips">
+    <span class="chip" onclick="filtrerChip('neuf')">Neuf</span>
+    <span class="chip" onclick="filtrerChip('occasion')">Occasion</span>
+    <span class="chip" onclick="filtrerChip('Tecno')">Tecno</span>
+    <span class="chip" onclick="filtrerChip('Samsung')">Samsung</span>
+    <span class="chip" onclick="filtrerChip('Infinix')">Infinix</span>
+    <span class="chip" onclick="filtrerChip('Apple')">Apple</span>
+  </div>
+</div>
+
+<div class="espace-vendeur" id="espaceVendeur" style="display:none;">
+  <div class="top">
+    <div class="avatar" id="evAvatar"></div>
+    <div>
+      <div class="nom" id="evNom"></div>
+      <div class="meta" id="evMeta"></div>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="n" id="evNbAnnonces">0</div><div class="l">annonces</div></div>
+    <div class="stat"><div class="n" id="evStatut">—</div><div class="l">statut</div></div>
+  </div>
+  <button class="btn-publier" onclick="ouvrirModalPublication()">＋ Publier une annonce</button>
+</div>
+
+<section id="sectionResultats" style="display:none;">
+  <div class="section-head">
+    <div><span class="section-tag" id="resultatsTag">Recherche</span><h2 id="resultatsTitre">Résultats</h2></div>
+    <span class="clear-search" onclick="effacerRecherche()">Effacer ✕</span>
+  </div>
+  <div class="grid-results" id="resultatsGrid"></div>
+</section>
+
+<section id="sectionAnnonces">
+  <div class="section-head">
+    <div><span class="section-tag">En ce moment</span><h2>Annonces disponibles</h2></div>
+  </div>
+  <div class="row-scroll" id="annoncesRow"></div>
+</section>
+
+<section style="padding-top:0">
+  <div class="section-head">
+    <div><span class="section-tag">Confiance</span><h2>Boutiques vérifiées</h2></div>
+  </div>
+  <div class="row-scroll" id="boutiquesRow"></div>
+</section>
+
+<section style="padding-top:0">
+  <div class="section-head"><h2>Marques populaires</h2></div>
+  <div class="brand-grid">
+    <div class="brand-tile">Tecno</div><div class="brand-tile">Infinix</div>
+    <div class="brand-tile">Samsung</div><div class="brand-tile">itel</div>
+    <div class="brand-tile">Xiaomi</div><div class="brand-tile">Apple</div>
+    <div class="brand-tile">Oppo</div><div class="brand-tile">Nokia</div>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="section-head">
+    <div><span class="section-tag">Ils en parlent</span><h2>Avis des utilisateurs</h2></div>
+  </div>
+  <div class="row-scroll" id="avis"></div>
+</section>
+
+<div style="height:10px"></div>
+
+<nav class="bottomnav">
+  <a class="item active" href="index.html"><span class="ico">⌂</span>Accueil</a>
+  <a class="item" href="javascript:void(0)" onclick="document.getElementById('inputRecherche').focus()"><span class="ico">⌕</span>Recherche</a>
+  <a class="item" href="javascript:void(0)" onclick="clicVendre()"><span class="ico">＋</span>Vendre</a>
+  <a class="item" href="javascript:void(0)"><span class="ico">♡</span>Favoris</a>
+  <a class="item" href="connexion.html"><span class="ico">☰</span>Compte</a>
+</nav>
+
+<!-- ---------- Modal : publier une annonce ---------- -->
+<div class="modal-overlay" id="modalPublier">
+  <div class="modal-sheet">
+    <div class="modal-close" onclick="fermerModalPublication()">✕</div>
+    <h2>Vends ton téléphone</h2>
+    <p class="sub" id="modalSub"></p>
+
+    <form id="formAnnonce" onsubmit="return false;">
+      <div class="field">
+        <label>Titre de l'annonce</label>
+        <div class="input-wrap">
+          <span class="ico">📱</span>
+          <input type="text" id="fTitre" placeholder="Ex : Samsung Galaxy A15 128 Go" required>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="field">
+          <label>Marque</label>
+          <div class="input-wrap">
+            <select id="fMarque" required>
+              <option value="">Choisir</option>
+              <option>Tecno</option><option>Infinix</option><option>Samsung</option>
+              <option>itel</option><option>Xiaomi</option><option>Apple</option>
+              <option>Oppo</option><option>Nokia</option><option>Autre</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>État</label>
+          <div class="input-wrap">
+            <select id="fEtat" required>
+              <option value="neuf">Neuf</option>
+              <option value="occasion">Occasion</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="field">
+          <label>Mémoire</label>
+          <div class="input-wrap">
+            <select id="fMemoire">
+              <option value="">—</option>
+              <option>32 Go</option><option>64 Go</option><option>128 Go</option>
+              <option>256 Go</option><option>512 Go</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>RAM</label>
+          <div class="input-wrap">
+            <select id="fRam">
+              <option value="">—</option>
+              <option>2 Go</option><option>4 Go</option><option>6 Go</option>
+              <option>8 Go</option><option>12 Go</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Prix (Francs CFA)</label>
+        <div class="input-wrap">
+          <span class="ico mono">F</span>
+          <input type="number" id="fPrix" placeholder="Ex : 95000" min="0" required>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Ville</label>
+        <div class="input-wrap">
+          <span class="ico">📍</span>
+          <select id="fVille" required>
+            <option value="">Choisir ta ville</option>
+            <option>Ouagadougou</option><option>Bobo-Dioulasso</option>
+            <option>Koudougou</option><option>Ouahigouya</option>
+            <option>Banfora</option><option>Autre</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Description</label>
+        <div class="input-wrap">
+          <textarea id="fDescription" placeholder="État général, accessoires inclus, raison de la vente..."></textarea>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Photos (jusqu'à 5)</label>
+        <div class="upload-box" onclick="document.getElementById('inputPhotos').click()">
+          <span class="ico">📷</span>
+          <span class="txt">Appuie pour ajouter des photos</span>
+          <input type="file" id="inputPhotos" accept="image/*" multiple>
+        </div>
+        <div class="thumbs" id="thumbsPhotos"></div>
+      </div>
+
+      <div class="field">
+        <label>Vidéo (optionnelle, 1 seule)</label>
+        <div class="upload-box" onclick="document.getElementById('inputVideo').click()">
+          <span class="ico">🎥</span>
+          <span class="txt">Appuie pour ajouter une courte vidéo</span>
+          <input type="file" id="inputVideo" accept="video/*">
+        </div>
+        <div class="thumbs" id="thumbVideo"></div>
+        <div class="error-msg" id="videoError"></div>
+        <div class="hint">Vidéo courte recommandée (moins de 15 s) — stockage limité en attendant Cloudinary.</div>
+      </div>
+
+      <div class="badge-info">
+        <span class="ico">ℹ️</span>
+        <span>Ton annonce apparaîtra immédiatement ci-dessous, avec un bouton "Discuter" vers ton WhatsApp (<span id="numeroPreview" class="mono"></span>).</span>
+      </div>
+
+      <button class="btn-publier" onclick="publierAnnonce()">Publier l'annonce</button>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast">Action effectuée</div>
+
+<script>
+  // ==========================================================
+  // Cette page lit désormais de vraies données stockées dans ce
+  // navigateur (localStorage) :
+  //  - "psbf_users"     : comptes créés via la page Connexion
+  //  - "psbf_annonces"  : annonces publiées via la page Vendre
+  //  - "psbf_session"   : session en cours
+  // Plus aucune fausse annonce n'est affichée : tant qu'aucun
+  // vendeur n'a rien publié, la section reste vide avec un message.
+  // Ces clés seront remplacées par de vraies requêtes Supabase.
+  // ==========================================================
+
+  const USERS_KEY = 'psbf_users';
+  const SESSION_KEY = 'psbf_session';
+  const ANNONCES_KEY = 'psbf_annonces';
+
+  function getUsers(){ try{ return JSON.parse(localStorage.getItem(USERS_KEY)) || []; } catch(e){ return []; } }
+  function getAnnonces(){ try{ return JSON.parse(localStorage.getItem(ANNONCES_KEY)) || []; } catch(e){ return []; } }
+  function getSessionUser(){
+    let session;
+    try{ session = JSON.parse(localStorage.getItem(SESSION_KEY)); } catch(e){ return null; }
+    if(!session) return null;
+    return getUsers().find(u => u.telephone === session.telephone) || null;
+  }
+  function initials(name){ return (name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
+  function normalize(str){
+    return (str || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  }
+  function formatPrix(n){ return (n || 0).toLocaleString('fr-FR') + ' F'; }
+  function showToast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  // ---------- Lien WhatsApp ----------
+  function lienWhatsApp(telephone, titre){
+    let clean = (telephone || '').replace(/\D/g, '');
+    if(!clean.startsWith('226')) {
+      clean = clean.startsWith('0') ? '226' + clean.slice(1) : '226' + clean;
+    }
+    const msg = encodeURIComponent(`Bonjour, je suis intéressé(e) par votre annonce "${titre}" sur Phone Shop BF.`);
+    return `https://wa.me/${clean}?text=${msg}`;
+  }
+
+  // ---------- Bandeau compte ----------
+  function afficherCompte(){
+    const user = getSessionUser();
+    if(!user) return;
+    document.getElementById('compteStrip').style.display = 'flex';
+    document.getElementById('comptePrenom').textContent = user.nom.split(' ')[0];
+    document.getElementById('comptePill').textContent = user.type === 'vendeur' ? 'VENDEUR' : 'ACHETEUR';
+    document.getElementById('compteAvatarStrip').textContent = initials(user.nom);
+    document.getElementById('compteIcon').textContent = initials(user.nom);
+    document.getElementById('compteIcon').style.background = 'linear-gradient(135deg, var(--orange), var(--gold))';
+    document.getElementById('compteIcon').style.color = 'var(--black)';
+    document.getElementById('compteIcon').style.fontFamily = "'Sora',sans-serif";
+    document.getElementById('compteIcon').style.fontWeight = '700';
+
+    if(user.type === 'vendeur'){
+      document.getElementById('espaceVendeur').style.display = 'block';
+      document.getElementById('evAvatar').textContent = initials(user.boutique || user.nom);
+      document.getElementById('evNom').textContent = user.boutique || user.nom;
+      document.getElementById('evMeta').textContent = user.ville + ' · ' + user.telephone;
+      document.getElementById('evNbAnnonces').textContent = getAnnonces().filter(a => a.vendeurTelephone === user.telephone).length;
+      document.getElementById('evStatut').textContent = user.verifie ? '✓ Vérifié' : 'En attente';
+    }
+  }
+
+  // ---------- Clic sur "Vendre" (nav du bas) ----------
+  function clicVendre(){
+    const user = getSessionUser();
+    if(!user){
+      window.location.href = 'connexion.html';
+      return;
+    }
+    if(user.type !== 'vendeur'){
+      showToast("Il te faut un compte vendeur pour publier. Inscris-toi en tant que vendeur.");
+      return;
+    }
+    ouvrirModalPublication();
+  }
+
+  // ---------- Modal publication ----------
+  let photosData = [];
+  let videoData = null;
+
+  function ouvrirModalPublication(){
+    const user = getSessionUser();
+    if(!user || user.type !== 'vendeur') return;
+    document.getElementById('modalSub').textContent = 'Connecté en tant que ' + user.nom + (user.boutique ? ' · ' + user.boutique : '');
+    document.getElementById('numeroPreview').textContent = user.telephone;
+    document.getElementById('modalPublier').classList.add('show');
+  }
+  function fermerModalPublication(){
+    document.getElementById('modalPublier').classList.remove('show');
+  }
+
+  document.getElementById('inputPhotos').addEventListener('change', function(e){
+    const files = Array.from(e.target.files).slice(0, 5 - photosData.length);
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = function(ev){ photosData.push(ev.target.result); renderThumbsPhotos(); };
+      reader.readAsDataURL(file);
+    });
+  });
+  function renderThumbsPhotos(){
+    document.getElementById('thumbsPhotos').innerHTML = photosData.map((src,i) => `
+      <div class="thumb"><img src="${src}"><div class="remove" onclick="removePhoto(${i})">✕</div></div>
+    `).join('');
+  }
+  function removePhoto(i){ photosData.splice(i,1); renderThumbsPhotos(); }
+
+  const MAX_VIDEO_MB = 3;
+  document.getElementById('inputVideo').addEventListener('change', function(e){
+    const file = e.target.files[0];
+    const errEl = document.getElementById('videoError');
+    errEl.style.display = 'none';
+    if(!file) return;
+    const sizeMB = file.size / (1024*1024);
+    if(sizeMB > MAX_VIDEO_MB){
+      errEl.textContent = `Cette vidéo fait ${sizeMB.toFixed(1)} Mo — limite actuelle : ${MAX_VIDEO_MB} Mo.`;
+      errEl.style.display = 'block';
+      e.target.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(ev){
+      videoData = ev.target.result;
+      document.getElementById('thumbVideo').innerHTML = `
+        <div class="thumb video-thumb"><video src="${videoData}" muted></video><div class="remove" onclick="removeVideo()">✕</div></div>
+      `;
+    };
+    reader.readAsDataURL(file);
+  });
+  function removeVideo(){
+    videoData = null;
+    document.getElementById('inputVideo').value = '';
+    document.getElementById('thumbVideo').innerHTML = '';
+  }
+
+  function publierAnnonce(){
+    const user = getSessionUser();
+    if(!user || user.type !== 'vendeur') return;
+
+    const titre = document.getElementById('fTitre').value.trim();
+    const marque = document.getElementById('fMarque').value;
+    const etat = document.getElementById('fEtat').value;
+    const memoire = document.getElementById('fMemoire').value;
+    const ram = document.getElementById('fRam').value;
+    const prix = document.getElementById('fPrix').value;
+    const ville = document.getElementById('fVille').value;
+    const description = document.getElementById('fDescription').value.trim();
+
+    if(!titre || !marque || !prix || !ville){
+      showToast('Merci de remplir au moins le titre, la marque, le prix et la ville');
+      return;
+    }
+
+    const annonces = getAnnonces();
+    annonces.unshift({
+      id: 'a_' + Date.now(),
+      titre, marque, etat, memoire, ram,
+      prix: parseInt(prix, 10),
+      ville, description,
+      photos: photosData,
+      video: videoData,
+      vendeurTelephone: user.telephone,
+      vendeurNom: user.nom,
+      boutique: user.boutique || '',
+      verifie: !!user.verifie,
+      vues: 0,
+      creeLe: new Date().toISOString()
+    });
+
+    try{
+      localStorage.setItem(ANNONCES_KEY, JSON.stringify(annonces));
+    } catch(e){
+      showToast("Stockage plein — réduis le nombre ou la taille des photos/vidéo.");
+      return;
+    }
+
+    // Réinitialiser le formulaire
+    document.getElementById('formAnnonce').reset();
+    photosData = []; videoData = null;
+    document.getElementById('thumbsPhotos').innerHTML = '';
+    document.getElementById('thumbVideo').innerHTML = '';
+
+    fermerModalPublication();
+    showToast('Annonce publiée ✓');
+    renderAnnonces();
+    afficherCompte();
+  }
+
+  // ---------- Carte annonce (style reçu Mobile Money) ----------
+  function phoneCardHTML(a){
+    const photo = (a.photos && a.photos[0]) ? `<img src="${a.photos[0]}">` : `<div class="silhouette"></div>`;
+    return `<div class="phone-card">
+      <div class="shot">
+        ${photo}
+        <span class="badge-etat ${a.etat==='neuf'?'badge-neuf':'badge-occasion'}">${(a.etat||'').toUpperCase()}</span>
+        ${a.verifie ? '<span class="verified-tick">✓</span>' : ''}
+        ${a.video ? '<span class="video-tag">▶ Vidéo</span>' : ''}
+      </div>
+      <div class="perforation"></div>
+      <div class="info">
+        <div class="brand">${a.marque || ''}</div>
+        <div class="name">${a.titre}</div>
+        <div class="price mono">${formatPrix(a.prix)}</div>
+        <div class="meta"><span>📍 ${a.ville || ''}</span></div>
+        ${a.boutique ? `<div class="boutique-name">🏪 ${a.boutique}</div>` : (a.vendeurNom ? `<div class="boutique-name">👤 ${a.vendeurNom}</div>` : '')}
+        <button class="btn-discuter" onclick="window.open('${lienWhatsApp(a.vendeurTelephone, a.titre)}', '_blank')">💬 Discuter</button>
+      </div>
+    </div>`;
+  }
+
+  // ---------- Rendu annonces ----------
+  function renderAnnonces(){
+    const annonces = getAnnonces();
+    const el = document.getElementById('annoncesRow');
+    if(annonces.length === 0){
+      el.innerHTML = '';
+      document.getElementById('sectionAnnonces').innerHTML = `
+        <div class="empty-state">
+          <span class="ico">📦</span>
+          Aucune annonce publiée pour le moment.<br>
+          Sois le premier à <a href="vendre.html">vendre un téléphone</a> !
+        </div>`;
+      return;
+    }
+    el.innerHTML = annonces.map(phoneCardHTML).join('');
+  }
+
+  // ---------- Boutiques vérifiées (vrais vendeurs vérifiés) ----------
+  function renderBoutiques(){
+    const users = getUsers();
+    const boutiques = users.filter(u => u.type === 'vendeur' && u.verifie && !u.banni);
+    const el = document.getElementById('boutiquesRow');
+    if(boutiques.length === 0){
+      el.parentElement.innerHTML = `
+        <div class="empty-state">
+          <span class="ico">🏪</span>
+          Aucune boutique vérifiée pour l'instant.<br>
+          Les vendeurs validés par l'administration apparaîtront ici.
+        </div>`;
+      return;
+    }
+    el.innerHTML = boutiques.map(u => {
+      const nbAnnonces = getAnnonces().filter(a => a.vendeurTelephone === u.telephone).length;
+      return `<div class="shop-card">
+        <div class="shop-avatar">${initials(u.boutique || u.nom)}</div>
+        <div class="sname">${u.boutique || u.nom}</div>
+        <div class="sville">${u.ville}</div>
+        <div class="stick">✓ ${nbAnnonces} annonce${nbAnnonces>1?'s':''}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ---------- Recherche (article ou boutique) ----------
+  function executerRecherche(query){
+    const q = normalize(query);
+    const annonces = getAnnonces().filter(a =>
+      normalize(a.titre).includes(q) ||
+      normalize(a.marque).includes(q) ||
+      normalize(a.boutique).includes(q) ||
+      normalize(a.vendeurNom).includes(q) ||
+      normalize(a.ville).includes(q) ||
+      normalize(a.etat).includes(q)
+    );
+
+    document.getElementById('sectionAnnonces').style.display = 'none';
+    document.getElementById('sectionResultats').style.display = 'block';
+    document.getElementById('resultatsTitre').textContent = `"${query}"`;
+    document.getElementById('resultatsTag').textContent = annonces.length + ' résultat' + (annonces.length>1?'s':'');
+
+    const grid = document.getElementById('resultatsGrid');
+    if(annonces.length === 0){
+      grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">
+        <span class="ico">🔍</span>Aucun résultat pour "${query}".<br>Essaie un autre nom d'article ou de boutique.
+      </div>`;
+      return;
+    }
+    grid.innerHTML = annonces.map(phoneCardHTML).join('');
+  }
+
+  document.getElementById('formRecherche').addEventListener('submit', function(){
+    const q = document.getElementById('inputRecherche').value.trim();
+    if(q) executerRecherche(q); else effacerRecherche();
+  });
+
+  function filtrerChip(valeur){
+    document.getElementById('inputRecherche').value = valeur;
+    executerRecherche(valeur);
+  }
+
+  function effacerRecherche(){
+    document.getElementById('inputRecherche').value = '';
+    document.getElementById('sectionResultats').style.display = 'none';
+    document.getElementById('sectionAnnonces').style.display = 'block';
+  }
+
+  // ---------- Avis (démo — page Avis clients à construire plus tard) ----------
+  const avis = [
+    {texte:"Vendeur sérieux, le téléphone correspondait exactement à l'annonce. Paiement Orange Money sans souci.", nom:'Aïcha K.', ville:'Ouagadougou'},
+    {texte:"Livraison rapide à Bobo, le badge vérifié m'a rassuré avant d'acheter.", nom:'Issouf T.', ville:'Bobo-Dioulasso'},
+    {texte:"J'ai vendu mon ancien téléphone en 2 jours grâce aux favoris des acheteurs.", nom:'Ramata S.', ville:'Koudougou'},
+  ];
+  document.getElementById('avis').innerHTML = avis.map(r => `
+    <div class="review-card">
+      <div class="stars">★★★★★</div>
+      <p>"${r.texte}"</p>
+      <div class="reviewer">
+        <div class="initial">${initials(r.nom)}</div>
+        <div><div class="rname">${r.nom}</div><div class="rcity">${r.ville}</div></div>
+      </div>
+    </div>`).join('');
+
+  afficherCompte();
+  renderAnnonces();
+  renderBoutiques();
+</script>
+
+</body>
+</html>

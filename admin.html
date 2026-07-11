@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Administration — Phone Shop BF</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0B1F3A; --navy-light:#132a4d; --black:#0A0A0A; --white:#FFFFFF;
+    --orange:#FF6B1A; --orange-dark:#E4590E; --gold:#F2A93B; --green:#1FAA59;
+    --red:#E5484D; --grey:#7C8AA0; --card:#0F2444;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{ background:var(--navy); color:var(--white); font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased; }
+  h1,h2,h3,.display{ font-family:'Sora',sans-serif; font-weight:800; letter-spacing:-0.02em; }
+  .mono{ font-family:'IBM Plex Mono',monospace; }
+  a{ text-decoration:none; color:inherit; }
+
+  /* ---------- GATE (verrou admin) ---------- */
+  #gate{
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .gate-card{
+    background:var(--card); border:1px solid rgba(255,255,255,0.08); border-radius:16px;
+    padding:28px 22px; max-width:360px; width:100%; text-align:center;
+  }
+  .gate-card .ico{ font-size:30px; margin-bottom:10px; display:block; }
+  .gate-card h2{ font-size:19px; margin-bottom:6px; }
+  .gate-card p{ font-size:12.5px; color:var(--grey); margin-bottom:18px; line-height:1.5; }
+  .gate-card input{
+    width:100%; background:var(--navy); border:1px solid rgba(255,255,255,0.12); border-radius:10px;
+    padding:13px 14px; color:var(--white); font-size:14.5px; margin-bottom:12px; outline:none;
+  }
+  .gate-card input:focus{ border-color:var(--orange); }
+  .gate-card button{
+    width:100%; background:var(--orange); color:var(--white); border:none; padding:13px 0;
+    border-radius:10px; font-weight:700; font-size:14px; cursor:pointer;
+  }
+  .gate-err{ color:var(--red); font-size:12px; margin-top:10px; display:none; }
+
+  /* ---------- ADMIN APP ---------- */
+  #app{ display:none; }
+  header{
+    display:flex; align-items:center; justify-content:space-between; padding:16px 18px;
+    background:var(--black); border-bottom:1px solid rgba(255,255,255,0.06);
+    position:sticky; top:0; z-index:50;
+  }
+  .logo{ display:flex; align-items:center; gap:8px; font-size:16px; font-weight:800; }
+  .logo .dot{ width:8px; height:8px; border-radius:50%; background:var(--orange); }
+  .logo small{ display:block; font-size:9.5px; color:var(--gold); font-weight:600; letter-spacing:0.08em; }
+  .logout-btn{ font-size:12px; color:var(--grey); background:rgba(255,255,255,0.06); padding:8px 12px; border-radius:9px; cursor:pointer; }
+
+  .tabs{
+    display:flex; gap:4px; overflow-x:auto; padding:12px 14px; background:var(--black);
+    border-bottom:1px solid rgba(255,255,255,0.06); scrollbar-width:none;
+  }
+  .tabs::-webkit-scrollbar{ display:none; }
+  .tab{
+    flex:none; padding:9px 14px; border-radius:9px; font-size:12.5px; font-weight:600;
+    color:var(--grey); cursor:pointer; white-space:nowrap;
+  }
+  .tab.active{ background:var(--orange); color:var(--white); }
+
+  main{ padding:20px 16px 60px; }
+  .view{ display:none; }
+  .view.active{ display:block; }
+
+  .section-tag{
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--grey);
+    text-transform:uppercase; letter-spacing:0.1em; display:block; margin-bottom:4px;
+  }
+  h2.title{ font-size:19px; margin-bottom:16px; }
+
+  /* KPI grid */
+  .kpi-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:22px; }
+  .kpi{
+    background:var(--card); border:1px solid rgba(255,255,255,0.06); border-radius:14px; padding:16px;
+  }
+  .kpi .num{ font-family:'IBM Plex Mono',monospace; font-size:24px; font-weight:600; }
+  .kpi .lbl{ font-size:11.5px; color:var(--grey); margin-top:4px; }
+  .kpi .delta{ font-size:10.5px; margin-top:6px; }
+  .kpi .delta.up{ color:var(--green); }
+  .kpi .delta.down{ color:var(--red); }
+
+  .card{
+    background:var(--card); border:1px solid rgba(255,255,255,0.06); border-radius:14px;
+    padding:16px; margin-bottom:14px;
+  }
+
+  /* search */
+  .search-row{
+    display:flex; gap:8px; margin-bottom:14px;
+  }
+  .search-row input{
+    flex:1; background:var(--card); border:1px solid rgba(255,255,255,0.1); border-radius:10px;
+    padding:11px 13px; color:var(--white); font-size:13.5px; outline:none;
+  }
+  .search-row input:focus{ border-color:var(--orange); }
+  .search-row select{
+    background:var(--card); border:1px solid rgba(255,255,255,0.1); border-radius:10px;
+    padding:0 10px; color:var(--white); font-size:12.5px;
+  }
+
+  /* user row */
+  .user-row{
+    display:flex; align-items:center; gap:12px; padding:12px 0;
+    border-bottom:1px solid rgba(255,255,255,0.06);
+  }
+  .user-row:last-child{ border-bottom:none; }
+  .avatar{
+    width:38px; height:38px; border-radius:50%; flex:none;
+    background:linear-gradient(135deg, var(--orange), var(--gold));
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Sora',sans-serif; font-weight:700; font-size:14px; color:var(--black);
+  }
+  .user-info{ flex:1; min-width:0; }
+  .user-info .uname{ font-size:13.5px; font-weight:600; display:flex; align-items:center; gap:6px; }
+  .user-info .umeta{ font-size:11px; color:var(--grey); margin-top:2px; }
+  .pill{
+    font-size:9.5px; font-family:'IBM Plex Mono',monospace; padding:2px 7px; border-radius:6px; font-weight:600;
+  }
+  .pill-vendeur{ background:rgba(242,169,59,0.18); color:var(--gold); }
+  .pill-acheteur{ background:rgba(255,255,255,0.08); color:var(--grey); }
+  .pill-verifie{ background:rgba(31,170,89,0.18); color:var(--green); }
+  .pill-banni{ background:rgba(229,72,77,0.18); color:var(--red); }
+
+  .row-actions{ display:flex; gap:6px; flex:none; }
+  .act-btn{
+    font-size:11px; font-weight:600; padding:7px 10px; border-radius:8px; cursor:pointer; border:none;
+  }
+  .act-ban{ background:rgba(229,72,77,0.15); color:var(--red); }
+  .act-unban{ background:rgba(31,170,89,0.15); color:var(--green); }
+  .act-valider{ background:rgba(31,170,89,0.18); color:var(--green); }
+  .act-rejeter{ background:rgba(229,72,77,0.15); color:var(--red); }
+
+  .empty-state{ text-align:center; padding:30px 10px; color:var(--grey); font-size:13px; }
+  .empty-state .ico{ font-size:26px; display:block; margin-bottom:8px; }
+
+  /* mini bar chart for visits */
+  .chart{
+    display:flex; align-items:flex-end; gap:6px; height:120px; padding-top:10px;
+  }
+  .bar-col{ flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .bar{ width:100%; background:linear-gradient(180deg, var(--orange), var(--orange-dark)); border-radius:5px 5px 2px 2px; }
+  .bar-label{ font-size:9.5px; color:var(--grey); }
+
+  .listing-row{
+    display:flex; gap:10px; align-items:center; padding:12px 0;
+    border-bottom:1px solid rgba(255,255,255,0.06);
+  }
+  .listing-row:last-child{ border-bottom:none; }
+  .listing-thumb{
+    width:44px; height:44px; border-radius:9px; background:linear-gradient(160deg,#1a3560,#0c1f3f);
+    flex:none; display:flex; align-items:center; justify-content:center; font-size:16px;
+  }
+  .listing-info{ flex:1; min-width:0; }
+  .listing-info .lname{ font-size:13px; font-weight:600; }
+  .listing-info .lmeta{ font-size:11px; color:var(--grey); margin-top:2px; }
+  .flag-tag{ font-size:9.5px; color:var(--red); font-family:'IBM Plex Mono',monospace; }
+
+  .toast{
+    position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(20px);
+    background:var(--green); color:var(--white); padding:12px 18px; border-radius:10px;
+    font-size:13px; font-weight:600; opacity:0; pointer-events:none; transition:all .25s ease;
+    box-shadow:0 10px 30px rgba(0,0,0,0.3); white-space:nowrap; z-index:100;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- ===================== VERROU ADMIN ===================== -->
+<div id="gate">
+  <div class="gate-card">
+    <span class="ico">🛡️</span>
+    <h2>Espace Administration</h2>
+    <p>Accès réservé. Cette zone permet de gérer l'ensemble des utilisateurs, vendeurs et annonces de Phone Shop BF.</p>
+    <input type="password" id="adminPw" placeholder="Mot de passe administrateur">
+    <button onclick="tryLogin()">Entrer</button>
+    <div class="gate-err" id="gateErr">Mot de passe incorrect.</div>
+  </div>
+</div>
+
+<!-- ===================== APPLICATION ADMIN ===================== -->
+<div id="app">
+  <header>
+    <div class="logo">PHONE SHOP<span style="color:var(--orange)">BF</span><small>ADMINISTRATION</small></div>
+    <div class="logout-btn" onclick="logout()">Quitter</div>
+  </header>
+
+  <div class="tabs">
+    <div class="tab active" data-view="apercu">Vue d'ensemble</div>
+    <div class="tab" data-view="utilisateurs">Utilisateurs</div>
+    <div class="tab" data-view="vendeurs">Vendeurs à valider</div>
+    <div class="tab" data-view="annonces">Annonces & visites</div>
+  </div>
+
+  <main>
+    <!-- ---------- VUE D'ENSEMBLE ---------- -->
+    <div class="view active" id="view-apercu">
+      <span class="section-tag">Aujourd'hui</span>
+      <h2 class="title">Vue d'ensemble</h2>
+
+      <div class="kpi-grid">
+        <div class="kpi">
+          <div class="num mono" id="kpiTotal">0</div>
+          <div class="lbl">Comptes inscrits</div>
+          <div class="delta up">↑ mis à jour en direct</div>
+        </div>
+        <div class="kpi">
+          <div class="num mono" id="kpiVendeurs">0</div>
+          <div class="lbl">Vendeurs</div>
+          <div class="delta up" id="kpiVendeursAttente">0 en attente</div>
+        </div>
+        <div class="kpi">
+          <div class="num mono" id="kpiAcheteurs">0</div>
+          <div class="lbl">Acheteurs</div>
+        </div>
+        <div class="kpi">
+          <div class="num mono">1 284</div>
+          <div class="lbl">Visites ce mois</div>
+          <div class="delta up">↑ 12% vs mois dernier</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <span class="section-tag">Activité</span>
+        <h3 style="font-size:14.5px; margin-bottom:10px;">Visites des 7 derniers jours</h3>
+        <div class="chart" id="miniChart"></div>
+      </div>
+
+      <div class="card">
+        <span class="section-tag">À traiter</span>
+        <h3 style="font-size:14.5px; margin-bottom:4px;">Actions en attente</h3>
+        <p style="font-size:12.5px; color:var(--grey); line-height:1.6; margin-top:8px;" id="resumeAlertes">
+          Aucune action urgente pour le moment.
+        </p>
+      </div>
+    </div>
+
+    <!-- ---------- UTILISATEURS ---------- -->
+    <div class="view" id="view-utilisateurs">
+      <span class="section-tag">Acheteurs & vendeurs</span>
+      <h2 class="title">Tous les utilisateurs</h2>
+
+      <div class="search-row">
+        <input type="text" id="searchUsers" placeholder="Rechercher un nom ou un numéro..." oninput="renderUsers()">
+        <select id="filterType" onchange="renderUsers()">
+          <option value="tous">Tous</option>
+          <option value="acheteur">Acheteurs</option>
+          <option value="vendeur">Vendeurs</option>
+          <option value="banni">Bannis</option>
+        </select>
+      </div>
+
+      <div class="card" id="listeUtilisateurs"></div>
+    </div>
+
+    <!-- ---------- VENDEURS À VALIDER ---------- -->
+    <div class="view" id="view-vendeurs">
+      <span class="section-tag">Vérification d'identité</span>
+      <h2 class="title">Vendeurs en attente</h2>
+      <div class="card" id="listeVendeursAttente"></div>
+    </div>
+
+    <!-- ---------- ANNONCES & VISITES ---------- -->
+    <div class="view" id="view-annonces">
+      <span class="section-tag">Modération</span>
+      <h2 class="title">Annonces signalées</h2>
+      <div class="card" id="listeAnnonces"></div>
+
+      <span class="section-tag">Fréquentation</span>
+      <h2 class="title">Visites par ville (30 jours)</h2>
+      <div class="card">
+        <div class="chart" id="chartVilles"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast">Action effectuée</div>
+
+<script>
+  // ==========================================================
+  // NOTE : ce panneau lit les vrais comptes créés via la page
+  // Connexion/Inscription (stockés dans ce navigateur). Les
+  // annonces et statistiques de visites sont pour l'instant des
+  // données de démonstration — elles seront remplacées par de
+  // vraies données une fois Supabase branché (table "annonces",
+  // et un compteur de visites côté serveur).
+  //
+  // Sécurité : ce mot de passe est un verrou simple côté écran,
+  // suffisant pour la phase de test. Une fois en ligne, l'accès
+  // admin devra être vérifié côté serveur (rôle "admin" en base),
+  // sinon n'importe qui pourrait voir ce mot de passe dans le code.
+  // ==========================================================
+
+  const ADMIN_PASSWORD = 'PhoneShopBF2026'; // à changer avant la mise en ligne
+  const USERS_KEY = 'psbf_users';
+
+  function tryLogin(){
+    const val = document.getElementById('adminPw').value;
+    if(val === ADMIN_PASSWORD){
+      document.getElementById('gate').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      initAdmin();
+    } else {
+      document.getElementById('gateErr').style.display = 'block';
+    }
+  }
+  document.getElementById('adminPw').addEventListener('keydown', e => { if(e.key === 'Enter') tryLogin(); });
+
+  function logout(){
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('gate').style.display = 'flex';
+    document.getElementById('adminPw').value = '';
+  }
+
+  // ---------- Onglets ----------
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      document.getElementById('view-' + t.dataset.view).classList.add('active');
+    });
+  });
+
+  function getUsers(){
+    try{ return JSON.parse(localStorage.getItem(USERS_KEY)) || []; }
+    catch(e){ return []; }
+  }
+  function saveUsers(users){ localStorage.setItem(USERS_KEY, JSON.stringify(users)); }
+  function initials(name){ return (name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
+
+  function showToast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  // ---------- Annonces & visites : données de démonstration ----------
+  const ANNONCES_KEY = 'psbf_annonces';
+  function getAnnonces(){ try{ return JSON.parse(localStorage.getItem(ANNONCES_KEY)) || []; } catch(e){ return []; } }
+  function saveAnnonces(list){ localStorage.setItem(ANNONCES_KEY, JSON.stringify(list)); }
+  const visites7j = [120, 145, 98, 210, 260, 300, 251];
+  const joursLabels = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+  const villesVisites = [
+    {ville:'Ouaga', v:640}, {ville:'Bobo', v:310}, {ville:'Koudougou', v:120}, {ville:'Ouahigouya', v:90}, {ville:'Banfora', v:60}
+  ];
+
+  function renderChart(containerId, data, labels){
+    const max = Math.max(...data);
+    document.getElementById(containerId).innerHTML = data.map((v,i) => `
+      <div class="bar-col">
+        <div class="bar" style="height:${Math.max(6, (v/max)*90)}px"></div>
+        <div class="bar-label">${labels[i]}</div>
+      </div>
+    `).join('');
+  }
+
+  function renderAnnonces(){
+    const el = document.getElementById('listeAnnonces');
+    const annonces = getAnnonces();
+    if(annonces.length === 0){
+      el.innerHTML = `<div class="empty-state"><span class="ico">📦</span>Aucune annonce publiée pour le moment.</div>`;
+      return;
+    }
+    el.innerHTML = annonces.map((a,i) => `
+      <div class="listing-row">
+        <div class="listing-thumb">${a.photos && a.photos[0] ? `<img src="${a.photos[0]}" style="width:100%;height:100%;object-fit:cover;border-radius:9px;">` : '📱'}</div>
+        <div class="listing-info">
+          <div class="lname">${a.titre}</div>
+          <div class="lmeta">${a.boutique || a.vendeurNom} · ${a.ville} · ${(a.prix||0).toLocaleString('fr-FR')} F</div>
+        </div>
+        <div class="row-actions">
+          <button class="act-btn act-ban" onclick="supprimerAnnonce(${i})">Supprimer</button>
+        </div>
+      </div>
+    `).join('');
+  }
+  function supprimerAnnonce(i){
+    const annonces = getAnnonces();
+    annonces.splice(i,1);
+    saveAnnonces(annonces);
+    renderAnnonces();
+    showToast('Annonce supprimée ✓');
+  }
+
+  // ---------- Utilisateurs ----------
+  function renderUsers(){
+    const users = getUsers();
+    const search = (document.getElementById('searchUsers').value || '').toLowerCase();
+    const filter = document.getElementById('filterType').value;
+
+    let filtered = users.filter(u => {
+      const matchSearch = !search || u.nom.toLowerCase().includes(search) || (u.telephone||'').includes(search);
+      let matchFilter = true;
+      if(filter === 'acheteur') matchFilter = u.type === 'acheteur';
+      if(filter === 'vendeur') matchFilter = u.type === 'vendeur';
+      if(filter === 'banni') matchFilter = !!u.banni;
+      return matchSearch && matchFilter;
+    });
+
+    const el = document.getElementById('listeUtilisateurs');
+    if(filtered.length === 0){
+      el.innerHTML = `<div class="empty-state"><span class="ico">👤</span>Aucun utilisateur ne correspond.<br>Crée un compte depuis la page Connexion pour le voir apparaître ici.</div>`;
+      return;
+    }
+
+    el.innerHTML = filtered.map(u => `
+      <div class="user-row">
+        <div class="avatar">${initials(u.nom)}</div>
+        <div class="user-info">
+          <div class="uname">
+            ${u.nom}
+            <span class="pill ${u.type === 'vendeur' ? 'pill-vendeur' : 'pill-acheteur'}">${u.type === 'vendeur' ? 'VENDEUR' : 'ACHETEUR'}</span>
+            ${u.verifie ? '<span class="pill pill-verifie">VÉRIFIÉ</span>' : ''}
+            ${u.banni ? '<span class="pill pill-banni">BANNI</span>' : ''}
+          </div>
+          <div class="umeta">${u.telephone} · ${u.ville}${u.boutique ? ' · ' + u.boutique : ''}</div>
+        </div>
+        <div class="row-actions">
+          ${u.banni
+            ? `<button class="act-btn act-unban" onclick="toggleBan('${u.telephone}')">Réactiver</button>`
+            : `<button class="act-btn act-ban" onclick="toggleBan('${u.telephone}')">Bannir</button>`}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function toggleBan(telephone){
+    const users = getUsers();
+    const u = users.find(x => x.telephone === telephone);
+    if(!u) return;
+    u.banni = !u.banni;
+    saveUsers(users);
+    renderUsers();
+    renderKpis();
+    showToast(u.banni ? 'Compte banni' : 'Compte réactivé');
+  }
+
+  // ---------- Vendeurs à valider ----------
+  function renderVendeursAttente(){
+    const users = getUsers();
+    const attente = users.filter(u => u.type === 'vendeur' && !u.verifie && !u.banni);
+    const el = document.getElementById('listeVendeursAttente');
+
+    if(attente.length === 0){
+      el.innerHTML = `<div class="empty-state"><span class="ico">✓</span>Aucun vendeur en attente de vérification.</div>`;
+      return;
+    }
+    el.innerHTML = attente.map(u => `
+      <div class="user-row">
+        <div class="avatar">${initials(u.nom)}</div>
+        <div class="user-info">
+          <div class="uname">${u.nom}</div>
+          <div class="umeta">${u.boutique || 'Boutique non renseignée'} · ${u.ville} · ${u.telephone}</div>
+        </div>
+        <div class="row-actions">
+          <button class="act-btn act-valider" onclick="validerVendeur('${u.telephone}')">Valider</button>
+          <button class="act-btn act-rejeter" onclick="toggleBan('${u.telephone}')">Rejeter</button>
+        </div>
+      </div>
+    `).join('');
+  }
+  function validerVendeur(telephone){
+    const users = getUsers();
+    const u = users.find(x => x.telephone === telephone);
+    if(!u) return;
+    u.verifie = true;
+    saveUsers(users);
+    renderVendeursAttente();
+    renderUsers();
+    renderKpis();
+    showToast('Vendeur vérifié ✓');
+  }
+
+  // ---------- KPIs ----------
+  function renderKpis(){
+    const users = getUsers();
+    const vendeurs = users.filter(u => u.type === 'vendeur');
+    const acheteurs = users.filter(u => u.type === 'acheteur');
+    const enAttente = vendeurs.filter(u => !u.verifie && !u.banni);
+
+    document.getElementById('kpiTotal').textContent = users.length;
+    document.getElementById('kpiVendeurs').textContent = vendeurs.length;
+    document.getElementById('kpiAcheteurs').textContent = acheteurs.length;
+    document.getElementById('kpiVendeursAttente').textContent = enAttente.length + ' en attente';
+
+    const alertes = [];
+    if(enAttente.length > 0) alertes.push(enAttente.length + ' vendeur(s) en attente de vérification');
+    if(getAnnonces().length > 0) alertes.push(getAnnonces().length + ' annonce(s) publiée(s) au total');
+    document.getElementById('resumeAlertes').textContent = alertes.length > 0
+      ? alertes.join(' · ')
+      : 'Aucune action urgente pour le moment.';
+  }
+
+  function initAdmin(){
+    renderKpis();
+    renderUsers();
+    renderVendeursAttente();
+    renderAnnonces();
+    renderChart('miniChart', visites7j, joursLabels);
+    renderChart('chartVilles', villesVisites.map(v=>v.v), villesVisites.map(v=>v.ville));
+  }
+</script>
+
+</body>
+</html>

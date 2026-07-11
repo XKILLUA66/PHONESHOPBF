@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connexion — Phone Shop BF</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0B1F3A;
+    --navy-light:#132a4d;
+    --black:#0A0A0A;
+    --white:#FFFFFF;
+    --orange:#FF6B1A;
+    --orange-dark:#E4590E;
+    --gold:#F2A93B;
+    --green:#1FAA59;
+    --red:#E5484D;
+    --grey:#7C8AA0;
+    --card:#0F2444;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--navy);
+    color:var(--white);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  h1,h2,.display{ font-family:'Sora',sans-serif; font-weight:800; letter-spacing:-0.02em; }
+  .mono{ font-family:'IBM Plex Mono',monospace; }
+  a{ text-decoration:none; color:inherit; }
+  input, select{ font-family:'Inter',sans-serif; }
+
+  header{
+    display:flex; align-items:center; justify-content:center;
+    padding:18px 20px;
+    background:var(--black);
+    border-bottom:1px solid rgba(255,255,255,0.06);
+  }
+  .logo{ display:flex; align-items:center; gap:8px; font-size:17px; font-weight:800; }
+  .logo .dot{ width:8px; height:8px; border-radius:50%; background:var(--orange); }
+
+  .wrap{
+    max-width:420px; margin:0 auto; padding:28px 20px 60px;
+  }
+
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px; letter-spacing:0.14em; text-transform:uppercase;
+    color:var(--gold);
+    display:flex; align-items:center; gap:8px; margin-bottom:8px;
+  }
+  .eyebrow::before{ content:''; width:16px; height:1px; background:var(--gold); }
+
+  .wrap h1{ font-size:24px; margin-bottom:6px; }
+  .wrap > p.sub{ color:var(--grey); font-size:13.5px; margin-bottom:24px; }
+
+  /* Tabs */
+  .tabs{
+    display:flex; background:var(--card); border-radius:12px; padding:4px;
+    border:1px solid rgba(255,255,255,0.06); margin-bottom:26px;
+  }
+  .tab{
+    flex:1; text-align:center; padding:11px 0; border-radius:9px;
+    font-size:13.5px; font-weight:600; color:var(--grey);
+    cursor:pointer; transition:all .15s ease;
+  }
+  .tab.active{ background:var(--orange); color:var(--white); }
+
+  /* Panels */
+  .panel{ display:none; }
+  .panel.active{ display:block; }
+
+  .field{ margin-bottom:16px; }
+  .field label{
+    display:block; font-size:12px; color:var(--grey); margin-bottom:6px;
+    font-weight:500;
+  }
+  .field .input-wrap{
+    display:flex; align-items:center; background:var(--card);
+    border:1px solid rgba(255,255,255,0.1); border-radius:11px;
+    padding:0 12px; transition:border-color .15s ease;
+  }
+  .field .input-wrap:focus-within{ border-color:var(--orange); }
+  .field .input-wrap .ico{ font-size:14px; color:var(--grey); margin-right:8px; }
+  .field input, .field select{
+    flex:1; background:transparent; border:none; outline:none;
+    padding:13px 0; color:var(--white); font-size:14.5px;
+  }
+  .field select{ color:var(--white); }
+  .field select option{ background:var(--navy); color:var(--white); }
+  .toggle-pw{ font-size:12px; color:var(--grey); cursor:pointer; user-select:none; }
+  .hint{ font-size:11px; color:var(--grey); margin-top:6px; }
+  .error-msg{ font-size:11.5px; color:var(--red); margin-top:6px; display:none; }
+
+  /* Account type selector (inscription) */
+  .type-select{ display:flex; gap:10px; margin-bottom:20px; }
+  .type-card{
+    flex:1; background:var(--card); border:1.5px solid rgba(255,255,255,0.08);
+    border-radius:12px; padding:14px 10px; text-align:center; cursor:pointer;
+  }
+  .type-card.selected{ border-color:var(--orange); background:rgba(255,107,26,0.08); }
+  .type-card .ico{ font-size:22px; margin-bottom:6px; display:block; }
+  .type-card .label{ font-size:13px; font-weight:600; }
+  .type-card .desc{ font-size:10.5px; color:var(--grey); margin-top:2px; }
+
+  .row-flex{ display:flex; justify-content:space-between; align-items:center; margin:6px 0 20px; font-size:12.5px; }
+  .row-flex a{ color:var(--orange); font-weight:600; }
+
+  .btn-primary{
+    width:100%; background:var(--orange); color:var(--white); border:none;
+    padding:15px 0; border-radius:11px; font-weight:700; font-size:14.5px;
+    cursor:pointer; font-family:'Inter',sans-serif;
+  }
+  .btn-primary:active{ background:var(--orange-dark); }
+  .btn-primary:disabled{ opacity:0.55; }
+
+  .divider{
+    display:flex; align-items:center; gap:10px; margin:22px 0;
+    color:var(--grey); font-size:11.5px;
+  }
+  .divider::before, .divider::after{ content:''; flex:1; height:1px; background:rgba(255,255,255,0.1); }
+
+  .terms{ font-size:11.5px; color:var(--grey); line-height:1.5; margin-top:16px; text-align:center; }
+  .terms a{ color:var(--gold); }
+
+  .switch-line{ text-align:center; font-size:13px; color:var(--grey); margin-top:22px; }
+  .switch-line b{ color:var(--orange); cursor:pointer; }
+
+  .badge-verif{
+    display:flex; gap:10px; align-items:flex-start; background:var(--card);
+    border:1px solid rgba(31,170,89,0.3); border-radius:11px; padding:12px 14px;
+    margin-top:18px; font-size:11.5px; color:#B9C4D6; line-height:1.5;
+  }
+  .badge-verif .ico{ color:var(--green); font-size:16px; }
+
+  .toast{
+    position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(20px);
+    background:var(--green); color:var(--white); padding:12px 18px; border-radius:10px;
+    font-size:13px; font-weight:600; opacity:0; pointer-events:none;
+    transition:all .25s ease; box-shadow:0 10px 30px rgba(0,0,0,0.3);
+    white-space:nowrap;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="index.html" class="logo"><span class="dot"></span>PHONE SHOP<span style="color:var(--orange)">BF</span></a>
+</header>
+
+<div class="wrap">
+  <div class="eyebrow">Espace membre</div>
+  <h1 id="pageTitle">Accède à ton compte</h1>
+  <p class="sub" id="pageSub">Connecte-toi ou crée un compte pour acheter et vendre en toute confiance.</p>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="connexion">Connexion</div>
+    <div class="tab" data-tab="inscription">Inscription</div>
+  </div>
+
+  <!-- ===================== CONNEXION ===================== -->
+  <div class="panel active" id="panel-connexion">
+    <form id="formConnexion" onsubmit="return false;">
+      <div class="field">
+        <label>Téléphone ou e-mail</label>
+        <div class="input-wrap">
+          <span class="ico">📱</span>
+          <input type="text" placeholder="70 00 00 00 ou toi@email.com" required>
+        </div>
+      </div>
+      <div class="field">
+        <label>Mot de passe</label>
+        <div class="input-wrap">
+          <span class="ico">🔒</span>
+          <input type="password" id="pwLogin" placeholder="••••••••" required>
+          <span class="toggle-pw" onclick="togglePw('pwLogin', this)">Afficher</span>
+        </div>
+      </div>
+
+      <div class="row-flex">
+        <label style="display:flex; align-items:center; gap:6px; color:var(--grey);">
+          <input type="checkbox" style="accent-color:var(--orange)"> Rester connecté
+        </label>
+        <a href="javascript:void(0)">Mot de passe oublié ?</a>
+      </div>
+
+      <button class="btn-primary" type="submit">Se connecter</button>
+    </form>
+
+    <div class="switch-line">Pas encore de compte ? <b onclick="setTab('inscription')">S'inscrire</b></div>
+  </div>
+
+  <!-- ===================== INSCRIPTION ===================== -->
+  <div class="panel" id="panel-inscription">
+    <div class="type-select" id="typeSelect">
+      <div class="type-card selected" data-type="acheteur">
+        <span class="ico">🛍️</span>
+        <div class="label">Acheteur</div>
+        <div class="desc">Je veux acheter</div>
+      </div>
+      <div class="type-card" data-type="vendeur">
+        <span class="ico">🏪</span>
+        <div class="label">Vendeur</div>
+        <div class="desc">Je veux vendre</div>
+      </div>
+    </div>
+
+    <form id="formInscription" onsubmit="return false;">
+      <div class="field">
+        <label>Nom complet</label>
+        <div class="input-wrap">
+          <span class="ico">👤</span>
+          <input type="text" placeholder="Ton nom et prénom" required>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Numéro de téléphone</label>
+        <div class="input-wrap">
+          <span class="ico">📱</span>
+          <input type="tel" placeholder="70 00 00 00" required>
+        </div>
+        <div class="hint">Utilisé pour la connexion et pour te contacter.</div>
+      </div>
+
+      <div class="field">
+        <label>E-mail (optionnel)</label>
+        <div class="input-wrap">
+          <span class="ico">✉️</span>
+          <input type="email" placeholder="toi@email.com">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Ville</label>
+        <div class="input-wrap">
+          <span class="ico">📍</span>
+          <select required>
+            <option value="">Choisir ta ville</option>
+            <option>Ouagadougou</option>
+            <option>Bobo-Dioulasso</option>
+            <option>Koudougou</option>
+            <option>Ouahigouya</option>
+            <option>Banfora</option>
+            <option>Autre</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field" id="champBoutique" style="display:none;">
+        <label>Nom de la boutique</label>
+        <div class="input-wrap">
+          <span class="ico">🏪</span>
+          <input type="text" placeholder="Ex : Mobile Center BF">
+        </div>
+        <div class="hint">Un badge "vérifié" pourra être attribué après contrôle d'identité.</div>
+      </div>
+
+      <div class="field">
+        <label>Mot de passe</label>
+        <div class="input-wrap">
+          <span class="ico">🔒</span>
+          <input type="password" id="pwSignup" placeholder="8 caractères minimum" required minlength="8">
+          <span class="toggle-pw" onclick="togglePw('pwSignup', this)">Afficher</span>
+        </div>
+      </div>
+
+      <button class="btn-primary" type="submit">Créer mon compte</button>
+
+      <div class="badge-verif" id="badgeVendeur" style="display:none;">
+        <span class="ico">✓</span>
+        <span>En tant que vendeur, une vérification d'identité (pièce nationale) sera demandée avant la publication de ta première annonce.</span>
+      </div>
+
+      <p class="terms">
+        En créant un compte, tu acceptes les <a href="javascript:void(0)">Conditions d'utilisation</a> et la politique de confiance des vendeurs.
+      </p>
+    </form>
+
+    <div class="switch-line">Déjà un compte ? <b onclick="setTab('connexion')">Se connecter</b></div>
+  </div>
+</div>
+
+<div class="toast" id="toast">Connexion réussie</div>
+
+<script>
+  // ---------- Gestion des onglets ----------
+  function setTab(name){
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+    document.getElementById('panel-connexion').classList.toggle('active', name === 'connexion');
+    document.getElementById('panel-inscription').classList.toggle('active', name === 'inscription');
+
+    document.getElementById('pageTitle').textContent = name === 'connexion' ? 'Accède à ton compte' : 'Crée ton compte';
+    document.getElementById('pageSub').textContent = name === 'connexion'
+      ? "Connecte-toi ou crée un compte pour acheter et vendre en toute confiance."
+      : "Rejoins Phone Shop BF en tant qu'acheteur ou vendeur.";
+  }
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => setTab(t.dataset.tab)));
+
+  // ---------- Choix Acheteur / Vendeur ----------
+  document.querySelectorAll('.type-card').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.type-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      const isVendeur = card.dataset.type === 'vendeur';
+      document.getElementById('champBoutique').style.display = isVendeur ? 'block' : 'none';
+      document.getElementById('badgeVendeur').style.display = isVendeur ? 'flex' : 'none';
+    });
+  });
+
+  // ---------- Afficher / masquer mot de passe ----------
+  function togglePw(id, el){
+    const input = document.getElementById(id);
+    const isPw = input.type === 'password';
+    input.type = isPw ? 'text' : 'password';
+    el.textContent = isPw ? 'Masquer' : 'Afficher';
+  }
+
+  // ---------- Toast ----------
+  function showToast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  // ==========================================================
+  // GESTION DES COMPTES — stockage local (temporaire)
+  // À remplacer plus tard par Supabase Auth :
+  //   - Connexion  -> supabase.auth.signInWithPassword({ phone/email, password })
+  //   - Inscription -> supabase.auth.signUp({ phone/email, password }) puis
+  //     insertion du profil dans la table "utilisateurs".
+  // En attendant, les comptes sont stockés dans le navigateur (localStorage),
+  // donc valables uniquement sur cet appareil.
+  // ==========================================================
+
+  const USERS_KEY = 'psbf_users';
+  const SESSION_KEY = 'psbf_session';
+
+  function getUsers(){
+    try{ return JSON.parse(localStorage.getItem(USERS_KEY)) || []; }
+    catch(e){ return []; }
+  }
+  function saveUsers(users){
+    localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  }
+  function normalize(str){
+    return (str || '').trim().toLowerCase();
+  }
+  // Encodage simple du mot de passe (PAS un vrai chiffrement — juste pour éviter
+  // qu'il soit lisible en clair dans le navigateur. Supabase gèrera le vrai
+  // hachage sécurisé plus tard).
+  function encode(pw){
+    return btoa(unescape(encodeURIComponent(pw)));
+  }
+
+  function clearErrors(form){
+    form.querySelectorAll('.error-msg').forEach(e => { e.style.display='none'; e.textContent=''; });
+  }
+  function showFieldError(inputEl, msg){
+    let err = inputEl.closest('.field').querySelector('.error-msg');
+    if(!err){
+      err = document.createElement('div');
+      err.className = 'error-msg';
+      inputEl.closest('.field').appendChild(err);
+    }
+    err.textContent = msg;
+    err.style.display = 'block';
+  }
+
+  // ---------- INSCRIPTION ----------
+  document.getElementById('formInscription').addEventListener('submit', function(e){
+    e.preventDefault();
+    const form = e.target;
+    clearErrors(form);
+
+    const nom = form.querySelector('input[type="text"]').value.trim();
+    const telephone = form.querySelector('input[type="tel"]').value.trim();
+    const email = form.querySelector('input[type="email"]').value.trim();
+    const ville = form.querySelector('select').value;
+    const pwInput = document.getElementById('pwSignup');
+    const password = pwInput.value;
+    const typeCompte = document.querySelector('#typeSelect .type-card.selected').dataset.type;
+    const boutiqueInput = form.querySelector('#champBoutique input');
+    const boutique = boutiqueInput ? boutiqueInput.value.trim() : '';
+
+    if(!nom || !telephone || !ville || !password){
+      showToast('Merci de remplir tous les champs obligatoires');
+      return;
+    }
+    if(password.length < 8){
+      showFieldError(pwInput, 'Le mot de passe doit faire au moins 8 caractères.');
+      return;
+    }
+
+    const users = getUsers();
+    const telExists = users.some(u => normalize(u.telephone) === normalize(telephone));
+    if(telExists){
+      showFieldError(form.querySelector('input[type="tel"]'), 'Ce numéro est déjà utilisé. Essaie de te connecter.');
+      return;
+    }
+
+    users.push({
+      nom, telephone, email, ville,
+      type: typeCompte,
+      boutique: typeCompte === 'vendeur' ? boutique : '',
+      verifie: false,
+      password: encode(password),
+      creeLe: new Date().toISOString()
+    });
+    saveUsers(users);
+
+    // Connexion automatique après inscription
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ telephone, connecteLe: new Date().toISOString() }));
+
+    showToast(typeCompte === 'vendeur' ? 'Compte vendeur créé ✓' : 'Compte créé ✓');
+    setTimeout(() => afficherEtatConnecte(), 400);
+  });
+
+  // ---------- CONNEXION ----------
+  document.getElementById('formConnexion').addEventListener('submit', function(e){
+    e.preventDefault();
+    const form = e.target;
+    clearErrors(form);
+
+    const identifiant = form.querySelector('input[type="text"]').value.trim();
+    const pwInput = document.getElementById('pwLogin');
+    const password = pwInput.value;
+
+    if(!identifiant || !password){
+      showToast('Merci de remplir les deux champs');
+      return;
+    }
+
+    const users = getUsers();
+    const user = users.find(u =>
+      normalize(u.telephone) === normalize(identifiant) ||
+      normalize(u.nom) === normalize(identifiant) ||
+      normalize(u.email) === normalize(identifiant)
+    );
+
+    if(!user){
+      showFieldError(form.querySelector('input[type="text"]'), "Aucun compte trouvé avec ce numéro ou ce nom.");
+      return;
+    }
+    if(user.password !== encode(password)){
+      showFieldError(pwInput, 'Mot de passe incorrect.');
+      return;
+    }
+
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ telephone: user.telephone, connecteLe: new Date().toISOString() }));
+    showToast('Connexion réussie ✓');
+    setTimeout(() => afficherEtatConnecte(), 400);
+  });
+
+  // ---------- État "déjà connecté" ----------
+  function getSessionUser(){
+    let session;
+    try{ session = JSON.parse(localStorage.getItem(SESSION_KEY)); } catch(e){ return null; }
+    if(!session) return null;
+    return getUsers().find(u => normalize(u.telephone) === normalize(session.telephone)) || null;
+  }
+
+  function afficherEtatConnecte(){
+    const user = getSessionUser();
+    if(!user) return;
+
+    document.querySelector('.tabs').style.display = 'none';
+    document.getElementById('panel-connexion').classList.remove('active');
+    document.getElementById('panel-inscription').classList.remove('active');
+    document.getElementById('pageTitle').textContent = 'Te revoilà, ' + user.nom.split(' ')[0] + ' 👋';
+    document.getElementById('pageSub').textContent = user.type === 'vendeur'
+      ? 'Compte vendeur · ' + user.ville
+      : 'Compte acheteur · ' + user.ville;
+
+    const wrap = document.querySelector('.wrap');
+    let panel = document.getElementById('panel-connecte');
+    if(!panel){
+      panel = document.createElement('div');
+      panel.id = 'panel-connecte';
+      wrap.appendChild(panel);
+    }
+    panel.innerHTML = `
+      <div class="badge-verif" style="border-color:rgba(255,107,26,0.3)">
+        <span class="ico" style="color:var(--orange)">👤</span>
+        <span>Connecté avec le numéro <b>${user.telephone}</b>${user.type==='vendeur' ? ' · Boutique : ' + (user.boutique || '—') : ''}</span>
+      </div>
+      <button class="btn-primary" style="margin-top:18px; background:var(--card); border:1px solid rgba(255,255,255,0.1);" onclick="seDeconnecter()">Se déconnecter</button>
+    `;
+  }
+
+  function seDeconnecter(){
+    localStorage.removeItem(SESSION_KEY);
+    location.reload();
+  }
+
+  // Au chargement de la page : si déjà connecté, montrer directement l'état connecté
+  afficherEtatConnecte();
+</script>
+
+</body>
+</html>
