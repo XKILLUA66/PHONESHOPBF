@@ -287,6 +287,14 @@
 
 <div class="toast" id="toast">Connexion réussie</div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // Connexion à la vraie base de données Supabase (partagée par tous les appareils)
+  const sb = supabase.createClient(
+    'https://xeegjqjxztjfdiciuxyx.supabase.co',
+    'sb_publishable_gv83C5rKkchdiA3V0M2Csg_cL8g3-iA'
+  );
+</script>
 <script>
   // ---------- Gestion des onglets ----------
   function setTab(name){
@@ -329,34 +337,13 @@
   }
 
   // ==========================================================
-  // GESTION DES COMPTES — stockage local (temporaire)
-  // À remplacer plus tard par Supabase Auth :
-  //   - Connexion  -> supabase.auth.signInWithPassword({ phone/email, password })
-  //   - Inscription -> supabase.auth.signUp({ phone/email, password }) puis
-  //     insertion du profil dans la table "utilisateurs".
-  // En attendant, les comptes sont stockés dans le navigateur (localStorage),
-  // donc valables uniquement sur cet appareil.
+  // GESTION DES COMPTES — connectée à Supabase (vraie base partagée).
+  // Le mot de passe est vérifié et haché côté serveur (fonctions SQL),
+  // jamais en clair ni comparé ici. Seul un résumé du profil (jamais
+  // le mot de passe) est gardé dans ce navigateur pour rester connecté.
   // ==========================================================
 
-  const USERS_KEY = 'psbf_users';
   const SESSION_KEY = 'psbf_session';
-
-  function getUsers(){
-    try{ return JSON.parse(localStorage.getItem(USERS_KEY)) || []; }
-    catch(e){ return []; }
-  }
-  function saveUsers(users){
-    localStorage.setItem(USERS_KEY, JSON.stringify(users));
-  }
-  function normalize(str){
-    return (str || '').trim().toLowerCase();
-  }
-  // Encodage simple du mot de passe (PAS un vrai chiffrement — juste pour éviter
-  // qu'il soit lisible en clair dans le navigateur. Supabase gèrera le vrai
-  // hachage sécurisé plus tard).
-  function encode(pw){
-    return btoa(unescape(encodeURIComponent(pw)));
-  }
 
   function clearErrors(form){
     form.querySelectorAll('.error-msg').forEach(e => { e.style.display='none'; e.textContent=''; });
@@ -373,7 +360,7 @@
   }
 
   // ---------- INSCRIPTION ----------
-  document.getElementById('formInscription').addEventListener('submit', function(e){
+  document.getElementById('formInscription').addEventListener('submit', async function(e){
     e.preventDefault();
     const form = e.target;
     clearErrors(form);
@@ -397,32 +384,33 @@
       return;
     }
 
-    const users = getUsers();
-    const telExists = users.some(u => normalize(u.telephone) === normalize(telephone));
-    if(telExists){
-      showFieldError(form.querySelector('input[type="tel"]'), 'Ce numéro est déjà utilisé. Essaie de te connecter.');
+    const submitBtn = form.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+
+    const { data, error } = await sb.rpc('inscrire_utilisateur', {
+      p_nom: nom, p_telephone: telephone, p_email: email, p_ville: ville,
+      p_type: typeCompte, p_boutique: boutique, p_password: password
+    });
+
+    submitBtn.disabled = false;
+
+    if(error){
+      if(error.message.includes('NUMERO_DEJA_UTILISE')){
+        showFieldError(form.querySelector('input[type="tel"]'), 'Ce numéro est déjà utilisé. Essaie de te connecter.');
+      } else {
+        showToast("Erreur de connexion au serveur. Réessaie.");
+      }
       return;
     }
 
-    users.push({
-      nom, telephone, email, ville,
-      type: typeCompte,
-      boutique: typeCompte === 'vendeur' ? boutique : '',
-      verifie: false,
-      password: encode(password),
-      creeLe: new Date().toISOString()
-    });
-    saveUsers(users);
-
-    // Connexion automatique après inscription
-    localStorage.setItem(SESSION_KEY, JSON.stringify({ telephone, connecteLe: new Date().toISOString() }));
-
+    const user = data[0];
+    localStorage.setItem(SESSION_KEY, JSON.stringify(user));
     showToast(typeCompte === 'vendeur' ? 'Compte vendeur créé ✓' : 'Compte créé ✓');
     setTimeout(() => afficherEtatConnecte(), 400);
   });
 
   // ---------- CONNEXION ----------
-  document.getElementById('formConnexion').addEventListener('submit', function(e){
+  document.getElementById('formConnexion').addEventListener('submit', async function(e){
     e.preventDefault();
     const form = e.target;
     clearErrors(form);
@@ -436,33 +424,33 @@
       return;
     }
 
-    const users = getUsers();
-    const user = users.find(u =>
-      normalize(u.telephone) === normalize(identifiant) ||
-      normalize(u.nom) === normalize(identifiant) ||
-      normalize(u.email) === normalize(identifiant)
-    );
+    const submitBtn = form.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
 
-    if(!user){
-      showFieldError(form.querySelector('input[type="text"]'), "Aucun compte trouvé avec ce numéro ou ce nom.");
+    const { data, error } = await sb.rpc('connecter_utilisateur', {
+      p_identifiant: identifiant, p_password: password
+    });
+
+    submitBtn.disabled = false;
+
+    if(error){
+      showToast("Erreur de connexion au serveur. Réessaie.");
       return;
     }
-    if(user.password !== encode(password)){
-      showFieldError(pwInput, 'Mot de passe incorrect.');
+    if(!data || data.length === 0){
+      showFieldError(pwInput, "Numéro/nom ou mot de passe incorrect.");
       return;
     }
 
-    localStorage.setItem(SESSION_KEY, JSON.stringify({ telephone: user.telephone, connecteLe: new Date().toISOString() }));
+    localStorage.setItem(SESSION_KEY, JSON.stringify(data[0]));
     showToast('Connexion réussie ✓');
     setTimeout(() => afficherEtatConnecte(), 400);
   });
 
   // ---------- État "déjà connecté" ----------
   function getSessionUser(){
-    let session;
-    try{ session = JSON.parse(localStorage.getItem(SESSION_KEY)); } catch(e){ return null; }
-    if(!session) return null;
-    return getUsers().find(u => normalize(u.telephone) === normalize(session.telephone)) || null;
+    try{ return JSON.parse(localStorage.getItem(SESSION_KEY)); }
+    catch(e){ return null; }
   }
 
   function afficherEtatConnecte(){
@@ -498,8 +486,23 @@
     location.reload();
   }
 
-  // Au chargement de la page : si déjà connecté, montrer directement l'état connecté
-  afficherEtatConnecte();
+  // Au chargement : si une session existe, on revérifie auprès du serveur
+  // (détecte un bannissement ou une validation survenue depuis la dernière visite).
+  async function initSession(){
+    const cached = getSessionUser();
+    if(!cached) return;
+    const { data, error } = await sb.rpc('obtenir_profil', { p_telephone: cached.telephone });
+    if(error || !data || data.length === 0) return;
+    const fresh = data[0];
+    if(fresh.banni){
+      localStorage.removeItem(SESSION_KEY);
+      showToast("Ce compte a été suspendu.");
+      return;
+    }
+    localStorage.setItem(SESSION_KEY, JSON.stringify(fresh));
+    afficherEtatConnecte();
+  }
+  initSession();
 </script>
 
 </body>

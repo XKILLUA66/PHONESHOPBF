@@ -506,29 +506,27 @@
 
 <div class="toast" id="toast">Action effectuée</div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const sb = supabase.createClient(
+    'https://xeegjqjxztjfdiciuxyx.supabase.co',
+    'sb_publishable_gv83C5rKkchdiA3V0M2Csg_cL8g3-iA'
+  );
+</script>
 <script>
   // ==========================================================
-  // Cette page lit désormais de vraies données stockées dans ce
-  // navigateur (localStorage) :
-  //  - "psbf_users"     : comptes créés via la page Connexion
-  //  - "psbf_annonces"  : annonces publiées via la page Vendre
-  //  - "psbf_session"   : session en cours
-  // Plus aucune fausse annonce n'est affichée : tant qu'aucun
-  // vendeur n'a rien publié, la section reste vide avec un message.
-  // Ces clés seront remplacées par de vraies requêtes Supabase.
+  // Cette page lit désormais de vraies données partagées dans Supabase.
+  // Les numéros de téléphone des vendeurs ne sont jamais chargés en
+  // bloc avec les annonces : ils sont récupérés un par un, seulement
+  // quand un acheteur clique sur "Discuter".
   // ==========================================================
 
-  const USERS_KEY = 'psbf_users';
   const SESSION_KEY = 'psbf_session';
-  const ANNONCES_KEY = 'psbf_annonces';
+  let annoncesCache = [];
 
-  function getUsers(){ try{ return JSON.parse(localStorage.getItem(USERS_KEY)) || []; } catch(e){ return []; } }
-  function getAnnonces(){ try{ return JSON.parse(localStorage.getItem(ANNONCES_KEY)) || []; } catch(e){ return []; } }
   function getSessionUser(){
-    let session;
-    try{ session = JSON.parse(localStorage.getItem(SESSION_KEY)); } catch(e){ return null; }
-    if(!session) return null;
-    return getUsers().find(u => u.telephone === session.telephone) || null;
+    try{ return JSON.parse(localStorage.getItem(SESSION_KEY)); }
+    catch(e){ return null; }
   }
   function initials(name){ return (name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
   function normalize(str){
@@ -551,6 +549,24 @@
     return `https://wa.me/${clean}?text=${msg}`;
   }
 
+  // Ouvre WhatsApp — le numéro n'est récupéré qu'à cet instant précis.
+  // On ouvre l'onglet tout de suite (pendant le clic) pour éviter que le
+  // navigateur bloque la fenêtre comme un pop-up, puis on la redirige.
+  function contacterVendeur(btn){
+    const id = btn.dataset.id;
+    const titre = btn.dataset.titre;
+    const win = window.open('', '_blank');
+    sb.rpc('obtenir_contact_vendeur', { p_annonce_id: id }).then(({ data, error }) => {
+      if(error || !data){
+        if(win) win.close();
+        showToast("Impossible de récupérer le contact du vendeur.");
+        return;
+      }
+      const url = lienWhatsApp(data, titre);
+      if(win) win.location = url; else window.open(url, '_blank');
+    });
+  }
+
   // ---------- Bandeau compte ----------
   function afficherCompte(){
     const user = getSessionUser();
@@ -570,7 +586,7 @@
       document.getElementById('evAvatar').textContent = initials(user.boutique || user.nom);
       document.getElementById('evNom').textContent = user.boutique || user.nom;
       document.getElementById('evMeta').textContent = user.ville + ' · ' + user.telephone;
-      document.getElementById('evNbAnnonces').textContent = getAnnonces().filter(a => a.vendeurTelephone === user.telephone).length;
+      document.getElementById('evNbAnnonces').textContent = annoncesCache.filter(a => a.vendeur_id === user.id).length;
       document.getElementById('evStatut').textContent = user.verifie ? '✓ Vérifié' : 'En attente';
     }
   }
@@ -647,7 +663,7 @@
     document.getElementById('thumbVideo').innerHTML = '';
   }
 
-  function publierAnnonce(){
+  async function publierAnnonce(){
     const user = getSessionUser();
     if(!user || user.type !== 'vendeur') return;
 
@@ -665,28 +681,24 @@
       return;
     }
 
-    const annonces = getAnnonces();
-    annonces.unshift({
-      id: 'a_' + Date.now(),
-      titre, marque, etat, memoire, ram,
-      prix: parseInt(prix, 10),
-      ville, description,
-      photos: photosData,
-      video: videoData,
-      vendeurTelephone: user.telephone,
-      vendeurNom: user.nom,
-      boutique: user.boutique || '',
-      verifie: !!user.verifie,
-      vues: 0,
-      creeLe: new Date().toISOString()
+    const btnPublier = document.querySelector('#modalPublier .btn-publier');
+    btnPublier.disabled = true;
+
+    const { data, error } = await sb.rpc('publier_annonce', {
+      p_vendeur_telephone: user.telephone,
+      p_titre: titre, p_marque: marque, p_etat: etat, p_memoire: memoire, p_ram: ram,
+      p_prix: parseInt(prix, 10), p_ville: ville, p_description: description,
+      p_photos: photosData, p_video: videoData
     });
 
-    try{
-      localStorage.setItem(ANNONCES_KEY, JSON.stringify(annonces));
-    } catch(e){
-      showToast("Stockage plein — réduis le nombre ou la taille des photos/vidéo.");
+    btnPublier.disabled = false;
+
+    if(error){
+      showToast("Erreur lors de la publication. Reconnecte-toi et réessaie.");
       return;
     }
+
+    annoncesCache.unshift(data[0]);
 
     // Réinitialiser le formulaire
     document.getElementById('formAnnonce').reset();
@@ -703,6 +715,7 @@
   // ---------- Carte annonce (style reçu Mobile Money) ----------
   function phoneCardHTML(a){
     const photo = (a.photos && a.photos[0]) ? `<img src="${a.photos[0]}">` : `<div class="silhouette"></div>`;
+    const titreAttr = (a.titre || '').replace(/"/g, '&quot;');
     return `<div class="phone-card">
       <div class="shot">
         ${photo}
@@ -716,34 +729,44 @@
         <div class="name">${a.titre}</div>
         <div class="price mono">${formatPrix(a.prix)}</div>
         <div class="meta"><span>📍 ${a.ville || ''}</span></div>
-        ${a.boutique ? `<div class="boutique-name">🏪 ${a.boutique}</div>` : (a.vendeurNom ? `<div class="boutique-name">👤 ${a.vendeurNom}</div>` : '')}
-        <button class="btn-discuter" onclick="window.open('${lienWhatsApp(a.vendeurTelephone, a.titre)}', '_blank')">💬 Discuter</button>
+        ${a.boutique ? `<div class="boutique-name">🏪 ${a.boutique}</div>` : (a.vendeur_nom ? `<div class="boutique-name">👤 ${a.vendeur_nom}</div>` : '')}
+        <button class="btn-discuter" data-id="${a.id}" data-titre="${titreAttr}" onclick="contacterVendeur(this)">💬 Discuter</button>
       </div>
     </div>`;
   }
 
-  // ---------- Rendu annonces ----------
+  // ---------- Chargement + rendu des annonces ----------
+  async function fetchAnnonces(){
+    const { data, error } = await sb.from('annonces').select('*').order('cree_le', { ascending: false });
+    annoncesCache = error ? [] : data;
+  }
+
   function renderAnnonces(){
-    const annonces = getAnnonces();
     const el = document.getElementById('annoncesRow');
-    if(annonces.length === 0){
+    if(annoncesCache.length === 0){
       el.innerHTML = '';
       document.getElementById('sectionAnnonces').innerHTML = `
         <div class="empty-state">
           <span class="ico">📦</span>
           Aucune annonce publiée pour le moment.<br>
-          Sois le premier à <a href="vendre.html">vendre un téléphone</a> !
+          Sois le premier à <a href="javascript:void(0)" onclick="clicVendre()">vendre un téléphone</a> !
         </div>`;
       return;
     }
-    el.innerHTML = annonces.map(phoneCardHTML).join('');
+    el.innerHTML = annoncesCache.map(phoneCardHTML).join('');
   }
 
-  // ---------- Boutiques vérifiées (vrais vendeurs vérifiés) ----------
+  // ---------- Boutiques vérifiées (déduites des annonces, sans exposer les comptes) ----------
   function renderBoutiques(){
-    const users = getUsers();
-    const boutiques = users.filter(u => u.type === 'vendeur' && u.verifie && !u.banni);
     const el = document.getElementById('boutiquesRow');
+    const parBoutique = {};
+    annoncesCache.filter(a => a.verifie && a.boutique).forEach(a => {
+      const key = a.boutique;
+      if(!parBoutique[key]) parBoutique[key] = { nom: a.boutique, ville: a.ville, count: 0 };
+      parBoutique[key].count++;
+    });
+    const boutiques = Object.values(parBoutique);
+
     if(boutiques.length === 0){
       el.parentElement.innerHTML = `
         <div class="empty-state">
@@ -753,25 +776,22 @@
         </div>`;
       return;
     }
-    el.innerHTML = boutiques.map(u => {
-      const nbAnnonces = getAnnonces().filter(a => a.vendeurTelephone === u.telephone).length;
-      return `<div class="shop-card">
-        <div class="shop-avatar">${initials(u.boutique || u.nom)}</div>
-        <div class="sname">${u.boutique || u.nom}</div>
-        <div class="sville">${u.ville}</div>
-        <div class="stick">✓ ${nbAnnonces} annonce${nbAnnonces>1?'s':''}</div>
-      </div>`;
-    }).join('');
+    el.innerHTML = boutiques.map(b => `<div class="shop-card">
+        <div class="shop-avatar">${initials(b.nom)}</div>
+        <div class="sname">${b.nom}</div>
+        <div class="sville">${b.ville || ''}</div>
+        <div class="stick">✓ ${b.count} annonce${b.count>1?'s':''}</div>
+      </div>`).join('');
   }
 
   // ---------- Recherche (article ou boutique) ----------
   function executerRecherche(query){
     const q = normalize(query);
-    const annonces = getAnnonces().filter(a =>
+    const resultats = annoncesCache.filter(a =>
       normalize(a.titre).includes(q) ||
       normalize(a.marque).includes(q) ||
       normalize(a.boutique).includes(q) ||
-      normalize(a.vendeurNom).includes(q) ||
+      normalize(a.vendeur_nom).includes(q) ||
       normalize(a.ville).includes(q) ||
       normalize(a.etat).includes(q)
     );
@@ -779,16 +799,16 @@
     document.getElementById('sectionAnnonces').style.display = 'none';
     document.getElementById('sectionResultats').style.display = 'block';
     document.getElementById('resultatsTitre').textContent = `"${query}"`;
-    document.getElementById('resultatsTag').textContent = annonces.length + ' résultat' + (annonces.length>1?'s':'');
+    document.getElementById('resultatsTag').textContent = resultats.length + ' résultat' + (resultats.length>1?'s':'');
 
     const grid = document.getElementById('resultatsGrid');
-    if(annonces.length === 0){
+    if(resultats.length === 0){
       grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">
         <span class="ico">🔍</span>Aucun résultat pour "${query}".<br>Essaie un autre nom d'article ou de boutique.
       </div>`;
       return;
     }
-    grid.innerHTML = annonces.map(phoneCardHTML).join('');
+    grid.innerHTML = resultats.map(phoneCardHTML).join('');
   }
 
   document.getElementById('formRecherche').addEventListener('submit', function(){
@@ -823,9 +843,29 @@
       </div>
     </div>`).join('');
 
-  afficherCompte();
-  renderAnnonces();
-  renderBoutiques();
+  // ---------- Rafraîchit la session (détecte un bannissement pendant l'absence) ----------
+  async function initSession(){
+    const cached = getSessionUser();
+    if(!cached) return;
+    const { data, error } = await sb.rpc('obtenir_profil', { p_telephone: cached.telephone });
+    if(error || !data || data.length === 0) return;
+    const fresh = data[0];
+    if(fresh.banni){
+      localStorage.removeItem(SESSION_KEY);
+      return;
+    }
+    localStorage.setItem(SESSION_KEY, JSON.stringify(fresh));
+  }
+
+  // ---------- Démarrage ----------
+  async function boot(){
+    await initSession();
+    await fetchAnnonces();
+    afficherCompte();
+    renderAnnonces();
+    renderBoutiques();
+  }
+  boot();
 </script>
 
 </body>

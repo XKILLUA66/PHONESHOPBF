@@ -282,33 +282,34 @@
 
 <div class="toast" id="toast">Action effectuée</div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const sb = supabase.createClient(
+    'https://xeegjqjxztjfdiciuxyx.supabase.co',
+    'sb_publishable_gv83C5rKkchdiA3V0M2Csg_cL8g3-iA'
+  );
+</script>
 <script>
   // ==========================================================
-  // NOTE : ce panneau lit les vrais comptes créés via la page
-  // Connexion/Inscription (stockés dans ce navigateur). Les
-  // annonces et statistiques de visites sont pour l'instant des
-  // données de démonstration — elles seront remplacées par de
-  // vraies données une fois Supabase branché (table "annonces",
-  // et un compteur de visites côté serveur).
-  //
-  // Sécurité : ce mot de passe est un verrou simple côté écran,
-  // suffisant pour la phase de test. Une fois en ligne, l'accès
-  // admin devra être vérifié côté serveur (rôle "admin" en base),
-  // sinon n'importe qui pourrait voir ce mot de passe dans le code.
+  // Ce panneau lit désormais les vraies données Supabase, via des
+  // fonctions dédiées à l'admin qui exigent le mot de passe et le
+  // revérifient côté serveur (pas seulement dans cet écran) —
+  // donc même quelqu'un qui inspecterait le code ne peut pas
+  // récupérer les utilisateurs sans connaître ce mot de passe.
+  // Les statistiques de visites restent des données de démonstration
+  // (un vrai compteur de visites viendra plus tard).
   // ==========================================================
 
-  const ADMIN_PASSWORD = 'PhoneShopBF2026'; // à changer avant la mise en ligne
-  const USERS_KEY = 'psbf_users';
+  let adminPw = '';
+  let usersCache = [];
+  let annoncesCache = [];
 
   function tryLogin(){
     const val = document.getElementById('adminPw').value;
-    if(val === ADMIN_PASSWORD){
-      document.getElementById('gate').style.display = 'none';
-      document.getElementById('app').style.display = 'block';
-      initAdmin();
-    } else {
-      document.getElementById('gateErr').style.display = 'block';
-    }
+    adminPw = val;
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    initAdmin();
   }
   document.getElementById('adminPw').addEventListener('keydown', e => { if(e.key === 'Enter') tryLogin(); });
 
@@ -316,6 +317,8 @@
     document.getElementById('app').style.display = 'none';
     document.getElementById('gate').style.display = 'flex';
     document.getElementById('adminPw').value = '';
+    document.getElementById('gateErr').style.display = 'none';
+    adminPw = '';
   }
 
   // ---------- Onglets ----------
@@ -328,11 +331,6 @@
     });
   });
 
-  function getUsers(){
-    try{ return JSON.parse(localStorage.getItem(USERS_KEY)) || []; }
-    catch(e){ return []; }
-  }
-  function saveUsers(users){ localStorage.setItem(USERS_KEY, JSON.stringify(users)); }
   function initials(name){ return (name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
 
   function showToast(msg){
@@ -341,10 +339,7 @@
     setTimeout(() => t.classList.remove('show'), 2000);
   }
 
-  // ---------- Annonces & visites : données de démonstration ----------
-  const ANNONCES_KEY = 'psbf_annonces';
-  function getAnnonces(){ try{ return JSON.parse(localStorage.getItem(ANNONCES_KEY)) || []; } catch(e){ return []; } }
-  function saveAnnonces(list){ localStorage.setItem(ANNONCES_KEY, JSON.stringify(list)); }
+  // ---------- Visites : toujours des données de démonstration ----------
   const visites7j = [120, 145, 98, 210, 260, 300, 251];
   const joursLabels = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
   const villesVisites = [
@@ -361,41 +356,41 @@
     `).join('');
   }
 
+  // ---------- Annonces ----------
   function renderAnnonces(){
     const el = document.getElementById('listeAnnonces');
-    const annonces = getAnnonces();
-    if(annonces.length === 0){
+    if(annoncesCache.length === 0){
       el.innerHTML = `<div class="empty-state"><span class="ico">📦</span>Aucune annonce publiée pour le moment.</div>`;
       return;
     }
-    el.innerHTML = annonces.map((a,i) => `
+    el.innerHTML = annoncesCache.map(a => `
       <div class="listing-row">
         <div class="listing-thumb">${a.photos && a.photos[0] ? `<img src="${a.photos[0]}" style="width:100%;height:100%;object-fit:cover;border-radius:9px;">` : '📱'}</div>
         <div class="listing-info">
-          <div class="lname">${a.titre}</div>
-          <div class="lmeta">${a.boutique || a.vendeurNom} · ${a.ville} · ${(a.prix||0).toLocaleString('fr-FR')} F</div>
+          <div class="lname">${a.titre}${a.vendeur_banni ? ' <span class=\"pill pill-banni\">VENDEUR BANNI</span>' : ''}</div>
+          <div class="lmeta">${a.boutique || a.vendeur_nom} · ${a.ville} · ${(a.prix||0).toLocaleString('fr-FR')} F</div>
         </div>
         <div class="row-actions">
-          <button class="act-btn act-ban" onclick="supprimerAnnonce(${i})">Supprimer</button>
+          <button class="act-btn act-ban" onclick="supprimerAnnonce('${a.id}')">Supprimer</button>
         </div>
       </div>
     `).join('');
   }
-  function supprimerAnnonce(i){
-    const annonces = getAnnonces();
-    annonces.splice(i,1);
-    saveAnnonces(annonces);
+  async function supprimerAnnonce(id){
+    const { error } = await sb.rpc('admin_supprimer_annonce', { p_admin_password: adminPw, p_annonce_id: id });
+    if(error){ showToast("Erreur : accès refusé ou problème serveur."); return; }
+    annoncesCache = annoncesCache.filter(a => a.id !== id);
     renderAnnonces();
+    renderKpis();
     showToast('Annonce supprimée ✓');
   }
 
   // ---------- Utilisateurs ----------
   function renderUsers(){
-    const users = getUsers();
     const search = (document.getElementById('searchUsers').value || '').toLowerCase();
     const filter = document.getElementById('filterType').value;
 
-    let filtered = users.filter(u => {
+    let filtered = usersCache.filter(u => {
       const matchSearch = !search || u.nom.toLowerCase().includes(search) || (u.telephone||'').includes(search);
       let matchFilter = true;
       if(filter === 'acheteur') matchFilter = u.type === 'acheteur';
@@ -424,28 +419,28 @@
         </div>
         <div class="row-actions">
           ${u.banni
-            ? `<button class="act-btn act-unban" onclick="toggleBan('${u.telephone}')">Réactiver</button>`
-            : `<button class="act-btn act-ban" onclick="toggleBan('${u.telephone}')">Bannir</button>`}
+            ? `<button class="act-btn act-unban" onclick="toggleBan('${u.id}')">Réactiver</button>`
+            : `<button class="act-btn act-ban" onclick="toggleBan('${u.id}')">Bannir</button>`}
         </div>
       </div>
     `).join('');
   }
 
-  function toggleBan(telephone){
-    const users = getUsers();
-    const u = users.find(x => x.telephone === telephone);
-    if(!u) return;
-    u.banni = !u.banni;
-    saveUsers(users);
+  async function toggleBan(userId){
+    const { data, error } = await sb.rpc('admin_toggle_ban', { p_admin_password: adminPw, p_user_id: userId });
+    if(error){ showToast("Erreur : accès refusé ou problème serveur."); return; }
+    const u = usersCache.find(x => x.id === userId);
+    if(u) u.banni = data;
+    annoncesCache.forEach(a => { if(a.vendeur_id === userId) a.vendeur_banni = data; });
     renderUsers();
+    renderVendeursAttente();
     renderKpis();
-    showToast(u.banni ? 'Compte banni' : 'Compte réactivé');
+    showToast(data ? 'Compte banni' : 'Compte réactivé');
   }
 
   // ---------- Vendeurs à valider ----------
   function renderVendeursAttente(){
-    const users = getUsers();
-    const attente = users.filter(u => u.type === 'vendeur' && !u.verifie && !u.banni);
+    const attente = usersCache.filter(u => u.type === 'vendeur' && !u.verifie && !u.banni);
     const el = document.getElementById('listeVendeursAttente');
 
     if(attente.length === 0){
@@ -460,45 +455,60 @@
           <div class="umeta">${u.boutique || 'Boutique non renseignée'} · ${u.ville} · ${u.telephone}</div>
         </div>
         <div class="row-actions">
-          <button class="act-btn act-valider" onclick="validerVendeur('${u.telephone}')">Valider</button>
-          <button class="act-btn act-rejeter" onclick="toggleBan('${u.telephone}')">Rejeter</button>
+          <button class="act-btn act-valider" onclick="validerVendeur('${u.id}')">Valider</button>
+          <button class="act-btn act-rejeter" onclick="toggleBan('${u.id}')">Rejeter</button>
         </div>
       </div>
     `).join('');
   }
-  function validerVendeur(telephone){
-    const users = getUsers();
-    const u = users.find(x => x.telephone === telephone);
-    if(!u) return;
-    u.verifie = true;
-    saveUsers(users);
+  async function validerVendeur(userId){
+    const { error } = await sb.rpc('admin_valider_vendeur', { p_admin_password: adminPw, p_user_id: userId });
+    if(error){ showToast("Erreur : accès refusé ou problème serveur."); return; }
+    const u = usersCache.find(x => x.id === userId);
+    if(u) u.verifie = true;
+    annoncesCache.forEach(a => { if(a.vendeur_id === userId) a.verifie = true; });
     renderVendeursAttente();
     renderUsers();
+    renderAnnonces();
     renderKpis();
     showToast('Vendeur vérifié ✓');
   }
 
   // ---------- KPIs ----------
   function renderKpis(){
-    const users = getUsers();
-    const vendeurs = users.filter(u => u.type === 'vendeur');
-    const acheteurs = users.filter(u => u.type === 'acheteur');
+    const vendeurs = usersCache.filter(u => u.type === 'vendeur');
+    const acheteurs = usersCache.filter(u => u.type === 'acheteur');
     const enAttente = vendeurs.filter(u => !u.verifie && !u.banni);
 
-    document.getElementById('kpiTotal').textContent = users.length;
+    document.getElementById('kpiTotal').textContent = usersCache.length;
     document.getElementById('kpiVendeurs').textContent = vendeurs.length;
     document.getElementById('kpiAcheteurs').textContent = acheteurs.length;
     document.getElementById('kpiVendeursAttente').textContent = enAttente.length + ' en attente';
 
     const alertes = [];
     if(enAttente.length > 0) alertes.push(enAttente.length + ' vendeur(s) en attente de vérification');
-    if(getAnnonces().length > 0) alertes.push(getAnnonces().length + ' annonce(s) publiée(s) au total');
+    if(annoncesCache.length > 0) alertes.push(annoncesCache.length + ' annonce(s) publiée(s) au total');
     document.getElementById('resumeAlertes').textContent = alertes.length > 0
       ? alertes.join(' · ')
       : 'Aucune action urgente pour le moment.';
   }
 
-  function initAdmin(){
+  async function initAdmin(){
+    const [resUsers, resAnnonces] = await Promise.all([
+      sb.rpc('admin_liste_utilisateurs', { p_admin_password: adminPw }),
+      sb.rpc('admin_liste_annonces', { p_admin_password: adminPw })
+    ]);
+
+    if(resUsers.error || resAnnonces.error){
+      document.getElementById('app').style.display = 'none';
+      document.getElementById('gate').style.display = 'flex';
+      document.getElementById('gateErr').style.display = 'block';
+      return;
+    }
+
+    usersCache = resUsers.data;
+    annoncesCache = resAnnonces.data;
+
     renderKpis();
     renderUsers();
     renderVendeursAttente();
