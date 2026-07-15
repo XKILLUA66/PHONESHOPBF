@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Détails de l'annonce — Phone Shop BF</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0B1F3A; --navy-light:#132a4d; --black:#0A0A0A; --white:#FFFFFF;
+    --orange:#FF6B1A; --orange-dark:#E4590E; --gold:#F2A93B; --green:#1FAA59;
+    --grey:#7C8AA0; --card:#0F2444;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{ background:var(--navy); color:var(--white); font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased; }
+  h1,h2,h3,.display{ font-family:'Sora',sans-serif; font-weight:800; letter-spacing:-0.02em; }
+  .mono{ font-family:'IBM Plex Mono',monospace; }
+  a{ text-decoration:none; color:inherit; }
+  img,video{max-width:100%; display:block;}
+
+  header{
+    display:flex; align-items:center; gap:12px; padding:16px 18px;
+    background:var(--black); position:sticky; top:0; z-index:50;
+    border-bottom:1px solid rgba(255,255,255,0.06);
+  }
+  .back-btn{
+    width:36px; height:36px; border-radius:10px; background:rgba(255,255,255,0.06);
+    display:flex; align-items:center; justify-content:center; font-size:18px; flex:none;
+  }
+  .logo{ display:flex; align-items:center; gap:8px; font-size:15px; font-weight:800; }
+  .logo .dot{ width:7px; height:7px; border-radius:50%; background:var(--orange); }
+
+  .wrap{ max-width:520px; margin:0 auto; padding-bottom:110px; }
+
+  /* ---------- Galerie ---------- */
+  .gallery-tabs{
+    display:flex; gap:8px; padding:14px 18px 0;
+  }
+  .gtab{
+    font-size:12px; font-weight:600; padding:7px 14px; border-radius:999px;
+    background:rgba(255,255,255,0.07); color:var(--grey); cursor:pointer;
+  }
+  .gtab.active{ background:var(--orange); color:var(--white); }
+
+  .gallery{
+    display:flex; overflow-x:auto; scroll-snap-type:x mandatory; margin-top:12px;
+    scrollbar-width:none; background:var(--black);
+  }
+  .gallery::-webkit-scrollbar{ display:none; }
+  .gallery img{
+    flex:none; width:100%; scroll-snap-align:start; aspect-ratio:1/1; object-fit:cover;
+  }
+  .gallery-empty{
+    width:100%; aspect-ratio:1/1; display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(160deg,#1a3560,#0c1f3f); font-size:60px;
+  }
+  .dots{ display:flex; justify-content:center; gap:6px; padding:10px 0 4px; }
+  .dot{ width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,0.25); }
+  .dot.active{ background:var(--orange); width:16px; border-radius:4px; transition:all .2s; }
+
+  .video-wrap{ display:none; background:var(--black); }
+  .video-wrap.active{ display:block; }
+  .video-wrap video{ width:100%; aspect-ratio:1/1; object-fit:contain; background:#000; }
+  .gallery-wrap.hidden{ display:none; }
+
+  /* ---------- Contenu ---------- */
+  section{ padding:20px 18px; }
+  .badges-row{ display:flex; gap:8px; margin-bottom:12px; }
+  .badge{
+    font-size:10.5px; font-weight:600; font-family:'IBM Plex Mono',monospace;
+    padding:4px 9px; border-radius:7px; letter-spacing:0.03em;
+  }
+  .badge-neuf{ background:var(--green); color:var(--white); }
+  .badge-occasion{ background:var(--gold); color:var(--black); }
+  .badge-verifie{ background:rgba(31,170,89,0.15); color:var(--green); display:flex; align-items:center; gap:4px; }
+
+  .brand-label{ font-size:11.5px; color:var(--grey); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:4px; }
+  h1.titre{ font-size:22px; line-height:1.2; margin-bottom:10px; }
+  .prix{ font-family:'IBM Plex Mono',monospace; font-size:28px; font-weight:600; color:var(--orange); margin-bottom:16px; }
+  .ville-row{ font-size:13px; color:var(--grey); margin-bottom:20px; }
+
+  .specs-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:20px; }
+  .spec{
+    background:var(--card); border:1px solid rgba(255,255,255,0.06); border-radius:11px;
+    padding:10px 8px; text-align:center;
+  }
+  .spec .v{ font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:600; }
+  .spec .l{ font-size:10px; color:var(--grey); margin-top:2px; }
+
+  .desc-title{ font-size:13px; font-weight:700; margin-bottom:8px; }
+  .desc-text{ font-size:13.5px; color:#C9D2E0; line-height:1.6; margin-bottom:22px; white-space:pre-wrap; }
+
+  /* ---------- Bloc vendeur ---------- */
+  .seller-card{
+    display:flex; align-items:center; gap:12px; background:var(--card);
+    border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:14px; margin-bottom:22px;
+  }
+  .seller-avatar{
+    width:46px; height:46px; border-radius:50%; flex:none;
+    background:linear-gradient(135deg, var(--orange), var(--gold));
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Sora',sans-serif; font-weight:700; font-size:16px; color:var(--black);
+  }
+  .seller-info{ flex:1; min-width:0; }
+  .seller-name{ font-size:14px; font-weight:700; display:flex; align-items:center; gap:6px; }
+  .seller-meta{ font-size:11.5px; color:var(--grey); margin-top:2px; }
+  .seller-arrow{ color:var(--grey); font-size:14px; }
+
+  .empty-state{
+    text-align:center; padding:60px 20px; color:var(--grey); font-size:13.5px; line-height:1.6;
+  }
+  .empty-state .ico{ font-size:32px; display:block; margin-bottom:12px; }
+  .empty-state a{ color:var(--orange); font-weight:600; }
+
+  /* ---------- Barre d'action fixe ---------- */
+  .action-bar{
+    position:fixed; bottom:0; left:0; right:0; background:var(--black);
+    border-top:1px solid rgba(255,255,255,0.08); padding:12px 18px 18px;
+    display:flex; gap:10px; z-index:60;
+  }
+  .btn-fav{
+    width:48px; height:48px; border-radius:12px; background:rgba(255,255,255,0.06);
+    display:flex; align-items:center; justify-content:center; font-size:19px; flex:none;
+  }
+  .btn-discuter-big{
+    flex:1; background:var(--green); color:var(--white); border:none; border-radius:12px;
+    font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+
+  #contenu{ display:none; }
+  #chargement{ text-align:center; padding:100px 20px; color:var(--grey); }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="back-btn" href="javascript:history.length>1?history.back():location.href='index.html'">←</a>
+  <a class="logo" href="index.html"><span class="dot"></span>PHONE SHOP<span style="color:var(--orange)">BF</span></a>
+</header>
+
+<div class="wrap">
+  <div id="chargement">Chargement de l'annonce...</div>
+
+  <div id="introuvable" style="display:none;">
+    <div class="empty-state">
+      <span class="ico">🔍</span>
+      Cette annonce n'existe plus ou a été retirée.<br>
+      <a href="index.html">← Retour à l'accueil</a>
+    </div>
+  </div>
+
+  <div id="contenu">
+    <div class="gallery-wrap" id="galleryWrap">
+      <div class="gallery-tabs" id="galleryTabs" style="display:none;">
+        <div class="gtab active" data-tab="photos" id="tabPhotos">Photos</div>
+        <div class="gtab" data-tab="video" id="tabVideo">▶ Vidéo</div>
+      </div>
+      <div class="gallery" id="gallery"></div>
+      <div class="dots" id="dots"></div>
+      <div class="video-wrap" id="videoWrap"><video id="videoPlayer" controls playsinline></video></div>
+    </div>
+
+    <section>
+      <div class="badges-row">
+        <span class="badge" id="badgeEtat"></span>
+        <span class="badge badge-verifie" id="badgeVerifie" style="display:none;">🟢 Boutique certifiée</span>
+      </div>
+
+      <div class="brand-label" id="marque"></div>
+      <h1 class="titre" id="titre"></h1>
+      <div class="prix mono" id="prix"></div>
+      <div class="ville-row" id="villeRow"></div>
+
+      <div class="specs-grid" id="specsGrid"></div>
+
+      <div id="descBlock" style="display:none;">
+        <div class="desc-title">Description</div>
+        <div class="desc-text" id="description"></div>
+      </div>
+
+      <a id="sellerLink" href="javascript:void(0)">
+        <div class="seller-card">
+          <div class="seller-avatar" id="sellerAvatar"></div>
+          <div class="seller-info">
+            <div class="seller-name" id="sellerName"></div>
+            <div class="seller-meta" id="sellerMeta"></div>
+          </div>
+          <div class="seller-arrow">→</div>
+        </div>
+      </a>
+    </section>
+  </div>
+</div>
+
+<div class="action-bar" id="actionBar" style="display:none;">
+  <div class="btn-fav">♡</div>
+  <button class="btn-discuter-big" id="btnDiscuterBig">💬 Discuter sur WhatsApp</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const sb = supabase.createClient(
+    'https://xeegjqjxztjfdiciuxyx.supabase.co',
+    'sb_publishable_gv83C5rKkchdiA3V0M2Csg_cL8g3-iA',
+    { global: { fetch: (url, options = {}) => fetch(url, { ...options, cache: 'no-store' }) } }
+  );
+
+  sb.from('visites').insert({ page: 'annonce' }).then(()=>{}).catch(()=>{});
+
+  function formatPrix(n){ return (n || 0).toLocaleString('fr-FR') + ' F'; }
+  function initials(name){ return (name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
+
+  function lienWhatsApp(telephone, titre){
+    let clean = (telephone || '').replace(/\D/g, '');
+    if(!clean.startsWith('226')) clean = clean.startsWith('0') ? '226' + clean.slice(1) : '226' + clean;
+    const msg = encodeURIComponent(`Bonjour, je suis intéressé(e) par votre annonce "${titre}" sur Phone Shop BF.`);
+    return `https://wa.me/${clean}?text=${msg}`;
+  }
+
+  function contacterVendeur(annonceId, titre){
+    const win = window.open('', '_blank');
+    sb.rpc('obtenir_contact_vendeur', { p_annonce_id: annonceId }).then(({ data, error }) => {
+      if(error || !data){ if(win) win.close(); alert("Impossible de récupérer le contact du vendeur."); return; }
+      const url = lienWhatsApp(data, titre);
+      if(win) win.location = url; else window.open(url, '_blank');
+    });
+  }
+
+  function renderGallery(photos, video){
+    const gallery = document.getElementById('gallery');
+    const dots = document.getElementById('dots');
+    const tabs = document.getElementById('galleryTabs');
+
+    if(!photos || photos.length === 0){
+      gallery.innerHTML = `<div class="gallery-empty">📱</div>`;
+    } else {
+      gallery.innerHTML = photos.map(src => `<img src="${src}">`).join('');
+      if(photos.length > 1){
+        dots.innerHTML = photos.map((_,i) => `<div class="dot ${i===0?'active':''}"></div>`).join('');
+        const dotEls = dots.querySelectorAll('.dot');
+        gallery.addEventListener('scroll', () => {
+          const i = Math.round(gallery.scrollLeft / gallery.clientWidth);
+          dotEls.forEach((d,idx) => d.classList.toggle('active', idx===i));
+        });
+      }
+    }
+
+    if(video){
+      tabs.style.display = 'flex';
+      document.getElementById('videoPlayer').src = video;
+      document.getElementById('tabPhotos').onclick = () => {
+        document.getElementById('tabPhotos').classList.add('active');
+        document.getElementById('tabVideo').classList.remove('active');
+        document.getElementById('videoWrap').classList.remove('active');
+        document.getElementById('gallery').style.display = 'flex';
+        document.getElementById('dots').style.display = 'flex';
+        document.getElementById('videoPlayer').pause();
+      };
+      document.getElementById('tabVideo').onclick = () => {
+        document.getElementById('tabVideo').classList.add('active');
+        document.getElementById('tabPhotos').classList.remove('active');
+        document.getElementById('videoWrap').classList.add('active');
+        document.getElementById('gallery').style.display = 'none';
+        document.getElementById('dots').style.display = 'none';
+      };
+    }
+  }
+
+  async function charger(){
+    const id = new URLSearchParams(location.search).get('id');
+    if(!id){
+      document.getElementById('chargement').style.display = 'none';
+      document.getElementById('introuvable').style.display = 'block';
+      return;
+    }
+
+    const { data, error } = await sb.from('annonces').select('*').eq('id', id).maybeSingle();
+
+    document.getElementById('chargement').style.display = 'none';
+
+    if(error || !data){
+      document.getElementById('introuvable').style.display = 'block';
+      return;
+    }
+
+    const a = data;
+    document.getElementById('contenu').style.display = 'block';
+    document.getElementById('actionBar').style.display = 'flex';
+
+    renderGallery(a.photos, a.video);
+
+    document.getElementById('badgeEtat').textContent = (a.etat || '').toUpperCase();
+    document.getElementById('badgeEtat').classList.add(a.etat === 'neuf' ? 'badge-neuf' : 'badge-occasion');
+    if(a.verifie) document.getElementById('badgeVerifie').style.display = 'flex';
+
+    document.getElementById('marque').textContent = a.marque || '';
+    document.getElementById('titre').textContent = a.titre;
+    document.getElementById('prix').textContent = formatPrix(a.prix);
+    document.getElementById('villeRow').textContent = '📍 ' + (a.ville || '');
+    document.title = a.titre + ' — Phone Shop BF';
+
+    const specs = [];
+    if(a.memoire) specs.push({ v: a.memoire, l: 'Stockage' });
+    if(a.ram) specs.push({ v: a.ram, l: 'RAM' });
+    specs.push({ v: a.etat === 'neuf' ? 'Neuf' : 'Occasion', l: 'État' });
+    document.getElementById('specsGrid').innerHTML = specs.map(s => `
+      <div class="spec"><div class="v">${s.v}</div><div class="l">${s.l}</div></div>
+    `).join('');
+
+    if(a.description){
+      document.getElementById('descBlock').style.display = 'block';
+      document.getElementById('description').textContent = a.description;
+    }
+
+    const sellerName = a.boutique || a.vendeur_nom || 'Vendeur';
+    document.getElementById('sellerAvatar').textContent = initials(sellerName);
+    document.getElementById('sellerName').innerHTML = sellerName + (a.verifie ? ' <span style="color:var(--green)">🟢</span>' : '');
+    document.getElementById('sellerMeta').textContent = (a.vendeur_nom && a.boutique ? a.vendeur_nom + ' · ' : '') + (a.ville || '');
+    document.getElementById('sellerLink').href = 'index.html?q=' + encodeURIComponent(sellerName);
+
+    document.getElementById('btnDiscuterBig').onclick = () => contacterVendeur(a.id, a.titre);
+  }
+
+  charger();
+</script>
+
+</body>
+</html>

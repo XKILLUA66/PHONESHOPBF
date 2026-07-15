@@ -252,12 +252,12 @@
       </div>
 
       <div class="field" id="champBoutique" style="display:none;">
-        <label>Nom de la boutique</label>
+        <label>Nom de la boutique <span style="color:var(--grey); font-weight:400;">(optionnel)</span></label>
         <div class="input-wrap">
           <span class="ico">🏪</span>
-          <input type="text" placeholder="Ex : Mobile Center BF">
+          <input type="text" placeholder="Laisse vide si tu vends en tant que particulier">
         </div>
-        <div class="hint">Un badge "vérifié" pourra être attribué après contrôle d'identité.</div>
+        <div class="hint">Tu gères une vraie boutique ? Renseigne son nom pour pouvoir demander le badge 🟢 Certifié plus tard.</div>
       </div>
 
       <div class="field">
@@ -272,8 +272,8 @@
       <button class="btn-primary" type="submit">Créer mon compte</button>
 
       <div class="badge-verif" id="badgeVendeur" style="display:none;">
-        <span class="ico">✓</span>
-        <span>En tant que vendeur, une vérification d'identité (pièce nationale) sera demandée avant la publication de ta première annonce.</span>
+        <span class="ico" style="color:var(--green)">✓</span>
+        <span>Tu peux publier une annonce dès maintenant, comme particulier. Les boutiques peuvent en plus demander le badge 🟢 Certifié depuis leur espace vendeur.</span>
       </div>
 
       <p class="terms">
@@ -292,7 +292,8 @@
   // Connexion à la vraie base de données Supabase (partagée par tous les appareils)
   const sb = supabase.createClient(
     'https://xeegjqjxztjfdiciuxyx.supabase.co',
-    'sb_publishable_gv83C5rKkchdiA3V0M2Csg_cL8g3-iA'
+    'sb_publishable_gv83C5rKkchdiA3V0M2Csg_cL8g3-iA',
+    { global: { fetch: (url, options = {}) => fetch(url, { ...options, cache: 'no-store' }) } }
   );
 </script>
 <script>
@@ -475,7 +476,7 @@
     panel.innerHTML = `
       <div class="badge-verif" style="border-color:rgba(255,107,26,0.3)">
         <span class="ico" style="color:var(--orange)">👤</span>
-        <span>Connecté avec le numéro <b>${user.telephone}</b>${user.type==='vendeur' ? ' · Boutique : ' + (user.boutique || '—') : ''}</span>
+        <span>Connecté avec le numéro <b>${user.telephone}</b>${user.type==='vendeur' ? ' · ' + (user.boutique || 'Particulier') + (user.verifie ? ' 🟢' : '') : ''}</span>
       </div>
       <button class="btn-primary" style="margin-top:18px; background:var(--card); border:1px solid rgba(255,255,255,0.1);" onclick="seDeconnecter()">Se déconnecter</button>
     `;

@@ -104,7 +104,7 @@
 
   .phone-card{
     flex:none; width:168px; background:var(--card); border-radius:14px; position:relative;
-    border:1px solid rgba(255,255,255,0.06); overflow:hidden;
+    border:1px solid rgba(255,255,255,0.06); overflow:hidden; cursor:pointer;
   }
   .grid-results .phone-card{ width:auto; }
   .phone-card .shot{
@@ -125,8 +125,11 @@
   }
   .verified-tick{
     position:absolute; top:8px; right:8px; width:18px; height:18px; border-radius:50%;
-    background:var(--navy); border:1.5px solid var(--orange); display:flex; align-items:center; justify-content:center;
-    font-size:10px; color:var(--orange);
+    background:var(--navy); border:1.5px solid var(--green); display:flex; align-items:center; justify-content:center;
+    font-size:10px; color:var(--green);
+  }
+  .cert-badge{
+    font-size:9.5px; font-weight:700; color:var(--green); margin-left:4px;
   }
   .perforation{ position:relative; height:1px; border-top:1.5px dashed rgba(255,255,255,0.18); margin:0 10px; }
   .perforation::before, .perforation::after{ content:''; position:absolute; top:-6px; width:12px; height:12px; border-radius:50%; background:var(--navy); }
@@ -300,7 +303,7 @@
 <div class="hero">
   <div class="eyebrow">Ouagadougou · Bobo-Dioulasso · tout le Burkina</div>
   <h1>Le téléphone qu'il te faut, <span>vendu par un voisin</span> de confiance.</h1>
-  <p>Achète et vends des téléphones neufs ou d'occasion. Paiement par Orange Money, Moov Money ou Wave. Vendeurs vérifiés.</p>
+  <p>Achète et vends des téléphones neufs ou d'occasion. Paiement par Orange Money, Moov Money ou Wave. Particuliers et boutiques certifiées.</p>
 
   <form class="search-box" id="formRecherche" onsubmit="return false;">
     <input type="text" id="inputRecherche" placeholder="Rechercher un article ou une boutique...">
@@ -350,7 +353,7 @@
 
 <section style="padding-top:0">
   <div class="section-head">
-    <div><span class="section-tag">Confiance</span><h2>Boutiques vérifiées</h2></div>
+    <div><span class="section-tag">Confiance</span><h2>Boutiques certifiées</h2></div>
   </div>
   <div class="row-scroll" id="boutiquesRow"></div>
 </section>
@@ -510,7 +513,8 @@
 <script>
   const sb = supabase.createClient(
     'https://xeegjqjxztjfdiciuxyx.supabase.co',
-    'sb_publishable_gv83C5rKkchdiA3V0M2Csg_cL8g3-iA'
+    'sb_publishable_gv83C5rKkchdiA3V0M2Csg_cL8g3-iA',
+    { global: { fetch: (url, options = {}) => fetch(url, { ...options, cache: 'no-store' }) } }
   );
 </script>
 <script>
@@ -570,7 +574,10 @@
   // ---------- Bandeau compte ----------
   function afficherCompte(){
     const user = getSessionUser();
-    if(!user) return;
+    if(!user || !user.nom || !user.telephone){
+      if(user){ localStorage.removeItem(SESSION_KEY); } // session corrompue/obsolète : on l'efface
+      return;
+    }
     document.getElementById('compteStrip').style.display = 'flex';
     document.getElementById('comptePrenom').textContent = user.nom.split(' ')[0];
     document.getElementById('comptePill').textContent = user.type === 'vendeur' ? 'VENDEUR' : 'ACHETEUR';
@@ -587,7 +594,7 @@
       document.getElementById('evNom').textContent = user.boutique || user.nom;
       document.getElementById('evMeta').textContent = user.ville + ' · ' + user.telephone;
       document.getElementById('evNbAnnonces').textContent = annoncesCache.filter(a => a.vendeur_id === user.id).length;
-      document.getElementById('evStatut').textContent = user.verifie ? '✓ Vérifié' : 'En attente';
+      document.getElementById('evStatut').textContent = user.verifie ? '🟢 Certifié' : 'Non certifié';
     }
   }
 
@@ -716,7 +723,7 @@
   function phoneCardHTML(a){
     const photo = (a.photos && a.photos[0]) ? `<img src="${a.photos[0]}">` : `<div class="silhouette"></div>`;
     const titreAttr = (a.titre || '').replace(/"/g, '&quot;');
-    return `<div class="phone-card">
+    return `<div class="phone-card" onclick="location.href='annonce.html?id=${a.id}'">
       <div class="shot">
         ${photo}
         <span class="badge-etat ${a.etat==='neuf'?'badge-neuf':'badge-occasion'}">${(a.etat||'').toUpperCase()}</span>
@@ -729,8 +736,8 @@
         <div class="name">${a.titre}</div>
         <div class="price mono">${formatPrix(a.prix)}</div>
         <div class="meta"><span>📍 ${a.ville || ''}</span></div>
-        ${a.boutique ? `<div class="boutique-name">🏪 ${a.boutique}</div>` : (a.vendeur_nom ? `<div class="boutique-name">👤 ${a.vendeur_nom}</div>` : '')}
-        <button class="btn-discuter" data-id="${a.id}" data-titre="${titreAttr}" onclick="contacterVendeur(this)">💬 Discuter</button>
+        ${a.boutique ? `<div class="boutique-name">🏪 ${a.boutique}${a.verifie ? '<span class="cert-badge">🟢 Certifié</span>' : ''}</div>` : (a.vendeur_nom ? `<div class="boutique-name">👤 ${a.vendeur_nom}</div>` : '')}
+        <button class="btn-discuter" data-id="${a.id}" data-titre="${titreAttr}" onclick="event.stopPropagation(); contacterVendeur(this)">💬 Discuter</button>
       </div>
     </div>`;
   }
@@ -738,11 +745,23 @@
   // ---------- Chargement + rendu des annonces ----------
   async function fetchAnnonces(){
     const { data, error } = await sb.from('annonces').select('*').order('cree_le', { ascending: false });
-    annoncesCache = error ? [] : data;
+    if(error){ annoncesCache = []; return false; }
+    annoncesCache = data;
+    return true;
   }
 
-  function renderAnnonces(){
+  function renderAnnonces(chargementOk){
     const el = document.getElementById('annoncesRow');
+    if(chargementOk === false){
+      el.innerHTML = '';
+      document.getElementById('sectionAnnonces').innerHTML = `
+        <div class="empty-state">
+          <span class="ico">⚠️</span>
+          Le chargement des annonces a échoué (problème réseau).<br>
+          <a href="javascript:void(0)" onclick="location.reload()">Recharger la page</a>
+        </div>`;
+      return;
+    }
     if(annoncesCache.length === 0){
       el.innerHTML = '';
       document.getElementById('sectionAnnonces').innerHTML = `
@@ -771,7 +790,7 @@
       el.parentElement.innerHTML = `
         <div class="empty-state">
           <span class="ico">🏪</span>
-          Aucune boutique vérifiée pour l'instant.<br>
+          Aucune boutique certifiée pour l'instant.<br>
           Les vendeurs validés par l'administration apparaîtront ici.
         </div>`;
       return;
@@ -830,7 +849,7 @@
   // ---------- Avis (démo — page Avis clients à construire plus tard) ----------
   const avis = [
     {texte:"Vendeur sérieux, le téléphone correspondait exactement à l'annonce. Paiement Orange Money sans souci.", nom:'Aïcha K.', ville:'Ouagadougou'},
-    {texte:"Livraison rapide à Bobo, le badge vérifié m'a rassuré avant d'acheter.", nom:'Issouf T.', ville:'Bobo-Dioulasso'},
+    {texte:"Livraison rapide à Bobo, le badge certifié m'a rassuré avant d'acheter.", nom:'Issouf T.', ville:'Bobo-Dioulasso'},
     {texte:"J'ai vendu mon ancien téléphone en 2 jours grâce aux favoris des acheteurs.", nom:'Ramata S.', ville:'Koudougou'},
   ];
   document.getElementById('avis').innerHTML = avis.map(r => `
@@ -858,12 +877,25 @@
   }
 
   // ---------- Démarrage ----------
+  // Chaque étape est isolée : si l'une échoue (ex. session corrompue),
+  // les autres s'affichent quand même au lieu que toute la page reste vide.
   async function boot(){
-    await initSession();
-    await fetchAnnonces();
-    afficherCompte();
-    renderAnnonces();
-    renderBoutiques();
+    // Enregistre la visite en arrière-plan, sans jamais bloquer ni casser l'affichage.
+    sb.from('visites').insert({ page: 'accueil' }).then(()=>{}).catch(()=>{});
+
+    try{ await initSession(); } catch(e){ console.error('initSession', e); }
+    let chargementOk = false;
+    try{ chargementOk = await fetchAnnonces(); } catch(e){ console.error('fetchAnnonces', e); }
+    try{ afficherCompte(); } catch(e){ console.error('afficherCompte', e); }
+    try{ renderAnnonces(chargementOk); } catch(e){ console.error('renderAnnonces', e); }
+    try{ renderBoutiques(); } catch(e){ console.error('renderBoutiques', e); }
+
+    // Arrivée depuis un lien "voir les annonces de cette boutique"
+    const q = new URLSearchParams(location.search).get('q');
+    if(q){
+      document.getElementById('inputRecherche').value = q;
+      executerRecherche(q);
+    }
   }
   boot();
 </script>
